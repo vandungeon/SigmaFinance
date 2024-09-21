@@ -36,10 +36,6 @@ class ViewModel @Inject constructor(
 
     init {
         repository = Repository(dbDao)
-        _FundsEvents.addSource(repository.readFundsEvents) { events ->
-            _FundsEvents.value = events
-            Log.d("viewModel", "Events data loaded: $events")
-        }
         _FundsEventsRecurring.addSource(repository.readFundsRecurringEvents) { eventsRecurring ->
             _FundsEventsRecurring.value = eventsRecurring
             Log.d("viewModel", "Events data loaded: $eventsRecurring")

@@ -54,6 +54,20 @@ android {
 }
 
 dependencies {
+
+    implementation(libs.androidx.room.runtime)
+    annotationProcessor(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.rxjava2)
+    implementation(libs.androidx.room.rxjava3)
+    implementation(libs.androidx.room.guava)
+    testImplementation(libs.androidx.room.testing)
+    implementation(libs.androidx.room.paging)
+
+
+
     implementation("com.google.dagger:hilt-android:2.51.1")
     kapt("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
@@ -115,6 +129,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)//google viewmodel setup
+
+    implementation(libs.gson)
 }
 kapt {
     correctErrorTypes = true

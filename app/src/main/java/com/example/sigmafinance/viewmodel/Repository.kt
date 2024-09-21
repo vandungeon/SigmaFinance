@@ -14,8 +14,6 @@ class Repository (private val dataAccessObjects: DataAccessObjects){
         dataAccessObjects.insertDay(day)
     }
 
-    val readFundsEvents: LiveData<List<DBType.FundsEvent>> = dataAccessObjects.readFundsEvents()
-
     val readFundsRecurringEvents: LiveData<List<DBType.FundsEventRecurring>> = dataAccessObjects.readFundsRecurringEvents()
 
     val readDaysWithEvents: LiveData<List<DBType.DayWithEvents>> = dataAccessObjects.readDaysWithEvents()
