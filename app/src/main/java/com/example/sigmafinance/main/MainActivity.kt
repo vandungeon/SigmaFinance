@@ -109,18 +109,19 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
         mutableStateOf("${currentDate.dayOfMonth}")
     }
 
-    val DaysWithEvents: List<DBType.DayWithEvents> by viewModel.DaysWithEvents.observeAsState(emptyList())
-    val recurringEvents: List<DBType.FundsEventRecurring> by viewModel.FundsEventRecurring.observeAsState(emptyList())
+   // val DaysWithEvents: List<DBType.DayWithEvents> by viewModel.DaysWithEvents.observeAsState(emptyList())
+    val Events: List<DBType.FundsEvent> by viewModel.FundsEvents.observeAsState(emptyList())
+    val recurringEvents: List<DBType.FundsEventRecurring> by viewModel.FundsEventsRecurring.observeAsState(emptyList())
     var currentMonthEvents by remember {
         mutableStateOf(emptyList<DBType.SingleMonthEvents>())
     }
-
+    var toggleAddEventDialog by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(500L)
         val tempList1: MutableList<DBType.SingleMonthEvents> = mutableListOf()
         val tempList2: MutableList<DBType.SingleMonthEvents> = mutableListOf()
 
-        DaysWithEvents.forEach { day ->
+/*        DaysWithEvents.forEach { day ->
             day.listOfEvents.forEach { event ->
                 tempList1.add(
                     DBType.SingleMonthEvents(
@@ -132,10 +133,22 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                     )
                 )
             }
+        }*/
+        Events.forEach { event ->
+             tempList1.add(
+                    DBType.SingleMonthEvents(
+                        event.date.dayOfMonth,
+                        event.name,
+                        event.amount,
+                        event.id,
+                        "Normal"
+                    )
+                )
+
         }
 
         recurringEvents.forEach { event ->
-            when (event.recurringType) {
+            when (event.repeatUnit) {
                 "Every Month" -> tempList2.add(
                     DBType.SingleMonthEvents(
                         event.startDate.dayOfMonth,
@@ -173,7 +186,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
     Scaffold (
     floatingActionButton = {
         ExtendedFloatingActionButton(
-            onClick = { /*TODO*/ },
+            onClick = { toggleAddEventDialog = true},
             content = { Icon(Icons.Default.Add, contentDescription = "Add button" ) },
         )
     }
@@ -225,13 +238,13 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
 
                 // Create LazyVerticalGrid to show the days
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(7),  // 7 columns for days of the week
+                    columns = GridCells.Fixed(7),
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(4.dp)
                 ) {
-                    // Add blank items for the days before the first day of the month
+
                     val firstDayOfMonth = listOfDays.first()
-                    val offset = firstDayOfMonth.dayOfWeek.value - 1  // Adjust if Sunday is day 7
+                    val offset = firstDayOfMonth.dayOfWeek.value - 1
                     items(offset) {
                         Spacer(modifier = Modifier.size(40.dp))  // Empty space before the first day
                     }
@@ -240,7 +253,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                     items(listOfDays) { day ->
                         val isTapped by remember { mutableStateOf(false) }
                         val dayNumber = day.dayOfMonth.toString()
-                        // Animate the scale based on the isTapped state
                         val dayColor = animateColorAsState(
                             targetValue = if (dayNumber == selectedDate) Purple40 else Color.White,
                             animationSpec = tween(durationMillis = 500)
@@ -263,7 +275,50 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
 
                     }
                 }
+                if(toggleAddEventDialog) {
+                    AddFundsEvent(
+                        onConfirm = { eventName: String, eventAmount: String, repeatInterval: Int, repeatUnit: String, endCondition: String, endAfterOccurrences: Int?, endDate: LocalDate? ->
+                            if(repeatUnit == "Don't repeat") {
+                                val newEvent = DBType.FundsEvent(
+                                    name = eventName,
+                                    amount = eventAmount.toFloat(),
+                                    date = LocalDate.of(
+                                        currentDate.year,
+                                        currentDate.month,
+                                        selectedDate.toInt()
+                                    )
+                                )
+                                viewModel.InsertEvent(newEvent)
+                            }
+                            else{
+                                val newEvent = DBType.FundsEventRecurring(
+                                    name = eventName,
+                                    startDate = LocalDate.of(
+                                        currentDate.year,
+                                        currentDate.month,
+                                        selectedDate.toInt()
+                                    ),
+                                    amount = eventAmount.toFloat(),
+                                    repeatInterval = repeatInterval,
+                                    repeatUnit = repeatUnit,
+                                    endCondition = endCondition,
+                                    endAfterOccurrences = endAfterOccurrences,
+                                    endDate = calculateEndDate(startDate = LocalDate.of(
+                                        currentDate.year,
+                                        currentDate.month,
+                                        selectedDate.toInt()
+                                    ),
+                                        repeatInterval,
+                                    repeatUnit,
+                                endCondition,
+                                endAfterOccurrences,
+                                endDate)
+                                )
+                                viewModel.InsertRecurringEvent(newEvent)
+                            }
 
+                    }, onDismiss = { toggleAddEventDialog = false })
+                }
             }
         }
 }

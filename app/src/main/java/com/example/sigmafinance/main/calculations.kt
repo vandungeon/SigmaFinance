@@ -1,5 +1,6 @@
 package com.example.sigmafinance.main
 
+import android.util.Log
 import java.time.YearMonth
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -11,7 +12,45 @@ fun getDaysInMonth(year: Int, month: Int): List<LocalDate> {
         LocalDate.of(year, month, day)
     }
 }
+fun calculateEndDate(
+    startDate: LocalDate,
+    repeatInterval: Int?,
+    repeatUnit: String?,
+    endCondition: String,
+    endAfterOccurrences: Int?,
+    endDate: LocalDate?
+): LocalDate? {
 
+    var newEndDate: LocalDate? = startDate
+    when (endCondition) {
+        "After N times" -> {
+            if (endAfterOccurrences != null) {
+                for (i in 1..endAfterOccurrences) {
+                    newEndDate = addInterval(newEndDate, repeatInterval ?: 1, repeatUnit)
+                }
+            }
+        }
+        "Until date" -> {
+            return endDate
+        }
+        "Never" -> {
+            newEndDate = null
+        }
+    }
+
+    return newEndDate
+}
+
+private fun addInterval(date: LocalDate?, interval: Int, unit: String?): LocalDate? {
+    Log.d("Add interval", "calculating new interval")
+    return when (unit) {
+        "Days" -> date?.plusDays(interval.toLong())
+        "Weeks" -> date?.plusWeeks(interval.toLong())
+        "Months" -> date?.plusMonths(interval.toLong())
+        "Years" -> date?.plusYears(interval.toLong())
+        else -> date // No addition if unit is not recognized
+    }
+}
 
 fun getFirstDayOfMonth(year: Int, month: Int): DayOfWeek {
     val firstDay = LocalDate.of(year, month, 1)

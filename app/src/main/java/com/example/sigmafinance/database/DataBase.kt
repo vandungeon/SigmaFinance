@@ -40,11 +40,11 @@ class ListConverter {
     }
 }
 @Database(
-    entities = [DBType.FundsEventRecurring::class, DBType.DayWithEvents::class],
-    version = 1,
+    entities = [DBType.FundsEventRecurring::class, DBType.FundsEvent::class],
+    version = 4,
     exportSchema = false
 )
-@TypeConverters(LocalDateConverter::class, ListConverter::class)
+@TypeConverters(LocalDateConverter::class)
 abstract class Days_and_events_db : RoomDatabase() {
 
     abstract fun dao(): DataAccessObjects

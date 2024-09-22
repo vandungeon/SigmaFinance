@@ -6,11 +6,13 @@ import java.time.LocalDate
 import java.util.Date
 
 class DBType {
+    @Entity(tableName = "FundsEvents")
     data class FundsEvent(
         @PrimaryKey(autoGenerate = true)
         val id: Int = 0,
         val name: String,
-        val amount: Int
+        val date: LocalDate,
+        val amount: Float
     )
     @Entity(tableName = "FundsRecurringEvents")
     data class FundsEventRecurring(
@@ -18,20 +20,24 @@ class DBType {
         val id: Int = 0,
         val name: String,
         val startDate: LocalDate,
-        val amount: Int,
-        val recurringType: String
+        val amount: Float,
+        val repeatInterval: Int,       // E.g., every 1, 2, 3...
+        val repeatUnit: String,        // E.g., "Days", "Weeks", "Months", "Years"
+        val endCondition: String,      // "Never", "After N times", "Until date"
+        val endAfterOccurrences: Int?, // Nullable for "After N times" condition
+        val endDate: LocalDate?        // Nullable for "Until date" condition
     )
-    @Entity(tableName = "DaysWithEvents")
+    /*    @Entity(tableName = "DaysWithEvents")
     data class DayWithEvents(
         @PrimaryKey(autoGenerate = true)
         val id: Int,
         val date: LocalDate,
         val listOfEvents: List<FundsEvent>
-    )
+    )*/
     data class SingleMonthEvents(
         val day: Int,
         val name: String,
-        val amount: Int,
+        val amount: Float,
         val id: Int,
         val source: String
     )
