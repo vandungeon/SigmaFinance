@@ -42,3 +42,12 @@ class DBType {
         val source: String
     )
 }
+class TemporaryLists {
+    data class DemonstrationEvent(
+        val referenceId: Int,
+        val name: String,
+        val date: LocalDate,
+        val amount: Float,
+        val type: String
+    )
+}

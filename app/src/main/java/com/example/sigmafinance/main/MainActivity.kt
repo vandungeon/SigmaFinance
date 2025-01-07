@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,14 +67,19 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.Navigation
 import com.example.sigmafinance.database.DBType
+import com.example.sigmafinance.database.TemporaryLists
 import com.example.sigmafinance.navigation.NavigationComponent
 import com.example.sigmafinance.ui.theme.Purple40
 import com.example.sigmafinance.ui.theme.SigmaFinanceTheme
 import com.example.sigmafinance.ui.theme.Typography
 import com.example.sigmafinance.ui.theme.standartText
 import com.example.sigmafinance.viewmodel.ViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -108,80 +115,54 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
     var selectedDate by remember {
         mutableStateOf("${currentDate.dayOfMonth}")
     }
-
-   // val DaysWithEvents: List<DBType.DayWithEvents> by viewModel.DaysWithEvents.observeAsState(emptyList())
+    var updateListsTrigger by remember { mutableLongStateOf(0L) }
     val Events: List<DBType.FundsEvent> by viewModel.FundsEvents.observeAsState(emptyList())
     val recurringEvents: List<DBType.FundsEventRecurring> by viewModel.FundsEventsRecurring.observeAsState(emptyList())
     var currentMonthEvents by remember {
-        mutableStateOf(emptyList<DBType.SingleMonthEvents>())
+        mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>())
     }
     var toggleAddEventDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(500L)
-        val tempList1: MutableList<DBType.SingleMonthEvents> = mutableListOf()
-        val tempList2: MutableList<DBType.SingleMonthEvents> = mutableListOf()
-
-/*        DaysWithEvents.forEach { day ->
-            day.listOfEvents.forEach { event ->
-                tempList1.add(
-                    DBType.SingleMonthEvents(
-                        day.date.dayOfMonth,
-                        event.name,
-                        event.amount,
-                        event.id,
-                        "Regular"
-                    )
-                )
-            }
-        }*/
-        Events.forEach { event ->
-             tempList1.add(
-                    DBType.SingleMonthEvents(
-                        event.date.dayOfMonth,
-                        event.name,
-                        event.amount,
-                        event.id,
-                        "Normal"
-                    )
-                )
-
-        }
-
-        recurringEvents.forEach { event ->
-            when (event.repeatUnit) {
-                "Every Month" -> tempList2.add(
-                    DBType.SingleMonthEvents(
-                        event.startDate.dayOfMonth,
-                        event.name,
-                        event.amount,
-                        event.id,
-                        "Recurring"
-                    )
-                )
-                "Every Week" -> {
-                    // Add logic for weekly recurring events if needed
-                }
-            }
-        }
-        currentMonthEvents = tempList1 + tempList2
-        Log.d("Events loading", "Loading finished\n" +
-                "DaysWithEvents in month ${currentDate.month}: $tempList1\n" +
-                "RecurringEvents in month ${currentDate.month}: $tempList2\n" +
-                "Result: $currentMonthEvents")
-    }
-
     fun IncrementDate() {
         val incrementedDate = currentDate.plusMonths(1)
         currentDate = incrementedDate
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
+        updateListsTrigger = System.currentTimeMillis()
     }
     fun DecrementDate() {
         val decrementDate = currentDate.minusMonths(1)
         currentDate = decrementDate
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
+        updateListsTrigger = System.currentTimeMillis()
     }
+    LaunchedEffect(updateListsTrigger) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val regularEventsDeferred = async(Dispatchers.IO) {
+                getOccurrencesForMonthStatic(Events, currentDate.year, currentDate.monthValue)
+            }
+
+            val recurringEventsDeferred = async(Dispatchers.IO) {
+                getOccurrencesForMonthRecurring(
+                    recurringEvents,
+                    currentDate.year,
+                    currentDate.monthValue
+                )
+            }
+
+            val regularEvents_ = regularEventsDeferred.await()
+            val recurringEvents_ = recurringEventsDeferred.await()
+
+            currentMonthEvents = regularEvents_ + recurringEvents_
+            Log.d(
+                "Events loading", "Loading finished\n" +
+                        "DaysWithEvents in month ${currentDate.month}: $regularEvents_\n" +
+                        "RecurringEvents in month ${currentDate.month}: $recurringEvents_\n" +
+                        "Result: $currentMonthEvents"
+            )
+        }
+    }
+
 
     Scaffold (
     floatingActionButton = {
@@ -236,7 +217,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Create LazyVerticalGrid to show the days
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(7),
                     modifier = Modifier.fillMaxWidth(),
@@ -246,10 +226,9 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                     val firstDayOfMonth = listOfDays.first()
                     val offset = firstDayOfMonth.dayOfWeek.value - 1
                     items(offset) {
-                        Spacer(modifier = Modifier.size(40.dp))  // Empty space before the first day
+                        Spacer(modifier = Modifier.size(40.dp))
                     }
 
-                    // Display the actual days
                     items(listOfDays) { day ->
                         val isTapped by remember { mutableStateOf(false) }
                         val dayNumber = day.dayOfMonth.toString()
@@ -267,6 +246,14 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                             Text(text = dayNumber, fontSize = 14.sp, color = dayColor, modifier = Modifier
                                 .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }){ selectedDate = dayNumber
                                     isTapped != isTapped })
+                            if (currentMonthEvents.any { it.date.dayOfMonth == dayNumber.toInt() }) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Event",
+                                    tint = Color.Green,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -303,7 +290,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                                     repeatUnit = repeatUnit,
                                     endCondition = endCondition,
                                     endAfterOccurrences = endAfterOccurrences,
-                                    endDate = calculateEndDate(startDate = LocalDate.of(
+                                    endDate = if(endCondition != "Never") {calculateEndDate(startDate = LocalDate.of(
                                         currentDate.year,
                                         currentDate.month,
                                         selectedDate.toInt()
@@ -312,7 +299,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel){
                                     repeatUnit,
                                 endCondition,
                                 endAfterOccurrences,
-                                endDate)
+                                endDate)} else {null}
                                 )
                                 viewModel.InsertRecurringEvent(newEvent)
                             }
