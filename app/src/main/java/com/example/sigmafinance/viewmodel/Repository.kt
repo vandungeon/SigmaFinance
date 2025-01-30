@@ -13,14 +13,21 @@ class Repository (private val dataAccessObjects: DataAccessObjects){
         dataAccessObjects.insertEvent(event)
     }
 
-/*    suspend fun InsertDay(day: DBType.DayWithEvents){
-        dataAccessObjects.insertDay(day)
-    }*/
-
+    suspend fun updateEvent(event: DBType.FundsEvent){
+        dataAccessObjects.updateEvent(event)
+    }
+    suspend fun updateEventRecurring(event: DBType.FundsEventRecurring){
+        dataAccessObjects.updateEventRecurring(event)
+    }
+    suspend fun deleteEvent(event: DBType.FundsEvent){
+        dataAccessObjects.deleteEvent(event)
+    }
+    suspend fun deleteEventRecurring(event: DBType.FundsEventRecurring){
+        dataAccessObjects.deleteEventRecurring(event)
+    }
     val readFundsRecurringEvents: LiveData<List<DBType.FundsEventRecurring>> = dataAccessObjects.readFundsRecurringEvents()
     val readFundsEvents: LiveData<List<DBType.FundsEvent>> = dataAccessObjects.readFundsEvents()
 
-/*    val readDaysWithEvents: LiveData<List<DBType.DayWithEvents>> = dataAccessObjects.readDaysWithEvents()*/
 
     fun cleanFundsRecurringEvents(){
         dataAccessObjects.cleanFundsRecurringEvents()
@@ -29,7 +36,4 @@ class Repository (private val dataAccessObjects: DataAccessObjects){
         dataAccessObjects.cleanFundsEvents()
     }
 
-/*    fun clearDaysWithEvents(){
-        dataAccessObjects.clearDaysWithEvents()
-    }*/
 }
