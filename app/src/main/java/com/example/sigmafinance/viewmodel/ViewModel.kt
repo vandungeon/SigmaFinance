@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlin.math.roundToInt
 
 @HiltViewModel
 class ViewModel @Inject constructor(
@@ -40,20 +41,21 @@ class ViewModel @Inject constructor(
     private val dbDao = Days_and_events_db.getDatabase(application).dao()
 
     private val _FundsEvents = MediatorLiveData<List<DBType.FundsEvent>>()
-        val FundsEvents: LiveData<List<DBType.FundsEvent>> = _FundsEvents
+    val FundsEvents: LiveData<List<DBType.FundsEvent>> = _FundsEvents
     private val _FundsEventsRecurring = MediatorLiveData<List<DBType.FundsEventRecurring>>()
-        val FundsEventsRecurring: LiveData<List<DBType.FundsEventRecurring>> = _FundsEventsRecurring
-/*    private val _DaysWithEvents = MediatorLiveData<List<DBType.DayWithEvents>>()
+    val FundsEventsRecurring: LiveData<List<DBType.FundsEventRecurring>> = _FundsEventsRecurring
+    /*    private val _DaysWithEvents = MediatorLiveData<List<DBType.DayWithEvents>>()
         val DaysWithEvents: LiveData<List<DBType.DayWithEvents>> = _DaysWithEvents*/
 
     private var _currentDate = mutableStateOf(LocalDate.now())
-        val currentDate = _currentDate
-    private var _listOfDays = mutableStateOf(getDaysInMonth(currentDate.value.year, currentDate.value.monthValue))
-        val listOfDays = _listOfDays
+    val currentDate = _currentDate
+    private var _listOfDays =
+        mutableStateOf(getDaysInMonth(currentDate.value.year, currentDate.value.monthValue))
+    val listOfDays = _listOfDays
 
     init {
         repository = Repository(dbDao)
-        _FundsEvents.addSource(repository.readFundsEvents) { events->
+        _FundsEvents.addSource(repository.readFundsEvents) { events ->
             _FundsEvents.value = events
             Log.d("viewModel", "Events data loaded: $events")
         }
@@ -61,12 +63,13 @@ class ViewModel @Inject constructor(
             _FundsEventsRecurring.value = eventsRecurring
             Log.d("viewModel", "Events data loaded: $eventsRecurring")
         }
-/*        _DaysWithEvents.addSource(repository.readDaysWithEvents) { days ->
+        /*        _DaysWithEvents.addSource(repository.readDaysWithEvents) { days ->
             _DaysWithEvents.value = days
             Log.d("viewModel", "Events data loaded: $days")
         }*/
         checkInitialization()
     }
+
     val _isInitialized = mutableStateOf(false)
     val isInitialized: Boolean get() = _isInitialized.value
 
@@ -75,48 +78,56 @@ class ViewModel @Inject constructor(
             _isInitialized.value = true
         }
     }
+
     fun updateDate(newDate: LocalDate) {
         currentDate.value = newDate
         listOfDays.value = getDaysInMonth(newDate.year, newDate.monthValue)
     }
-    fun InsertRecurringEvent(event: DBType.FundsEventRecurring){
+
+    fun InsertRecurringEvent(event: DBType.FundsEventRecurring) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.InsertRecurringEvent(event)
         }
     }
-    fun InsertEvent(event: DBType.FundsEvent){
+
+    fun InsertEvent(event: DBType.FundsEvent) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.InsertEvent(event)
         }
     }
 
-     fun getEventById(eventId: Int): DBType.FundsEvent? {
-            return FundsEvents.value?.find { it.id == eventId }
+    fun getEventById(eventId: Int): DBType.FundsEvent? {
+        return FundsEvents.value?.find { it.id == eventId }
     }
-     fun getRecurringEventById(eventId: Int): DBType.FundsEventRecurring? {
+
+    fun getRecurringEventById(eventId: Int): DBType.FundsEventRecurring? {
         return FundsEventsRecurring.value?.find { it.id == eventId }
     }
 
-    fun updateEvent(event: DBType.FundsEvent){
-        viewModelScope.launch (Dispatchers.IO){
+    fun updateEvent(event: DBType.FundsEvent) {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.updateEvent(event)
         }
     }
-    fun updateEventRecurring(event: DBType.FundsEventRecurring){
-        viewModelScope.launch (Dispatchers.IO){
+
+    fun updateEventRecurring(event: DBType.FundsEventRecurring) {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.updateEventRecurring(event)
         }
     }
-    fun deleteEvent(event: DBType.FundsEvent){
-        viewModelScope.launch (Dispatchers.IO){
+
+    fun deleteEvent(event: DBType.FundsEvent) {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.deleteEvent(event)
         }
     }
-    fun deleteEventRecurring(event: DBType.FundsEventRecurring){
-        viewModelScope.launch (Dispatchers.IO){
+
+    fun deleteEventRecurring(event: DBType.FundsEventRecurring) {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.deleteEventRecurring(event)
         }
     }
+
     val Context.dataStore by preferencesDataStore("MoneyValue")
 
     val moneyValue_key = floatPreferencesKey("MoneyValue_Key")
@@ -126,11 +137,13 @@ class ViewModel @Inject constructor(
             preferences[moneyValue_key] = value
         }
     }
+
     fun getMoneyValue(): Flow<Float> {
         return context.dataStore.data.map { preferences ->
             preferences[moneyValue_key] ?: 0.0f
         }
     }
+
     val lastLoginDateKey = stringPreferencesKey("last_login_date")
 
     suspend fun saveLastLogin(date: LocalDate) {
@@ -138,7 +151,8 @@ class ViewModel @Inject constructor(
             preferences[lastLoginDateKey] = date.toString()
         }
     }
-     fun getLastLogin(): Flow<LocalDate> {
+
+    fun getLastLogin(): Flow<LocalDate> {
         val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
 
         return context.dataStore.data.map { preferences ->
@@ -146,6 +160,7 @@ class ViewModel @Inject constructor(
             LocalDate.parse(string, formatter)
         }
     }
+
     private var _previousYearEvents = MutableLiveData<List<TemporaryLists.DemonstrationEvent>>()
     var previousYearEvents: LiveData<List<TemporaryLists.DemonstrationEvent>> = _previousYearEvents
 
@@ -160,9 +175,18 @@ class ViewModel @Inject constructor(
         val fundsEvents = _FundsEvents.value ?: emptyList()
         val fundsEventsRecurring = _FundsEventsRecurring.value ?: emptyList()
 
-        suspend fun fetchEventsForYear(scope: CoroutineScope, year: Int): List<TemporaryLists.DemonstrationEvent> {
-            val regularEventsDeferred = scope.async(Dispatchers.IO) { getOccurrencesForYearStatic(fundsEvents, year) }
-            val recurringEventsDeferred = scope.async(Dispatchers.IO) { getOccurrencesForYearRecurring(fundsEventsRecurring, year) }
+        suspend fun fetchEventsForYear(
+            scope: CoroutineScope,
+            year: Int
+        ): List<TemporaryLists.DemonstrationEvent> {
+            val regularEventsDeferred =
+                scope.async(Dispatchers.IO) { getOccurrencesForYearStatic(fundsEvents, year) }
+            val recurringEventsDeferred = scope.async(Dispatchers.IO) {
+                getOccurrencesForYearRecurring(
+                    fundsEventsRecurring,
+                    year
+                )
+            }
             return regularEventsDeferred.await() + recurringEventsDeferred.await()
         }
 
@@ -237,176 +261,227 @@ class ViewModel @Inject constructor(
     }
 
 
-    fun getOccurencesBetweenLastAndCurrentLogin(LastLogin: LocalDate, NewLogin: LocalDate):  Float {
+    fun getOccurencesBetweenLastAndCurrentLogin(LastLogin: LocalDate, NewLogin: LocalDate, key: Int): Any {
         val occurrences = mutableListOf<TemporaryLists.DemonstrationEvent>()
+        fun alignToStart(
+            date: LocalDate,
+            interval: Long,
+            unit: ChronoUnit,
+            start: LocalDate
+        ): LocalDate {
+            val periodsBetween = unit.between(date, start) / interval
+            return date.plus(periodsBetween * interval, unit).let {
+                if (it.isBefore(start)) it.plus(interval, unit) else it
+            }
+        }
 
-        val filteredFundsEvents = FundsEvents.value?.filter { event ->
-            event.date in LastLogin..NewLogin
-        } ?: emptyList()
-        for (event in filteredFundsEvents) {
-            val eventOccurrence = TemporaryLists.DemonstrationEvent(
-                referenceId = event.id,
-                name = event.name,
-                date = event.date,
-                amount = event.amount,
-                type = "Static"
-            )
-            occurrences.add(eventOccurrence)
+        fun generatedesiredSequence(
+            event: DBType.FundsEventRecurring,
+            unit: ChronoUnit
+        ): List<TemporaryLists.DemonstrationEvent> {
+            val firstOccurrence =
+                alignToStart(event.startDate, event.repeatInterval.toLong(), unit, LastLogin)
+            return generateSequence(firstOccurrence) { current ->
+                current.plusMonths(event.repeatInterval.toLong())
+            }.takeWhile { current ->
+                current <= NewLogin && (event.endDate == null || current <= event.endDate)
+            }.map { current ->
+                val maxDayOfMonth = current.lengthOfMonth()
+                TemporaryLists.DemonstrationEvent(
+                    referenceId = event.id,
+                    name = event.name,
+                    date = LocalDate.of(
+                        current.year,
+                        current.month,
+                        event.startDate.dayOfMonth.coerceAtMost(maxDayOfMonth)
+                    ),
+                    amount = event.amount,
+                    type = "Recurring"
+                )
+            }.toList()
+        }
+        if (key == 0) {
+            occurrences.addAll(
+                FundsEvents.value?.asSequence()
+                    ?.filter { event -> event.date in LastLogin..NewLogin }
+                    ?.map { event ->
+                        TemporaryLists.DemonstrationEvent(
+                            referenceId = event.id,
+                            name = event.name,
+                            date = event.date,
+                            amount = event.amount,
+                            type = "Static"
+                        )
+                    }
+                    ?.toList() ?: emptyList())
         }
         val filteredFundsEventRecurring = FundsEventsRecurring.value?.filter { event ->
             event.startDate <= NewLogin
         } ?: emptyList()
-        for (event in filteredFundsEventRecurring) {
-            var current = event.startDate
-            if (event.startDate.isBefore(LastLogin)) {
-                val daysBetween = ChronoUnit.DAYS.between(event.startDate, LastLogin)
-                current = when (event.repeatUnit) {
-                    "Months" -> {
-                        val monthsBetween = ChronoUnit.MONTHS.between(event.startDate, LastLogin)
-                        val adjustedMonths = (monthsBetween / event.repeatInterval) * event.repeatInterval
-                        event.startDate.plusMonths(adjustedMonths)
-                    }
-                    "Weeks" -> {
-                        val weeksBetween = ChronoUnit.WEEKS.between(event.startDate, LastLogin)
-                        val adjustedWeeks = (weeksBetween / event.repeatInterval) * event.repeatInterval
-                        event.startDate.plusWeeks(adjustedWeeks)
-                    }
-                    "Days" -> {
-                        val adjustedDays = (daysBetween / event.repeatInterval) * event.repeatInterval
-                        event.startDate.plusDays(adjustedDays)
-                    }
-                    "Years" -> {
-                        val yearsBetween = ChronoUnit.YEARS.between(event.startDate, LastLogin)
-                        val adjustedYears = (yearsBetween / event.repeatInterval) * event.repeatInterval
-                        event.startDate.plusYears(adjustedYears)
-                    }
-                    else -> event.startDate
-                }
-            }
+        occurrences.addAll(
+            filteredFundsEventRecurring.flatMap { event ->
 
-            while (current.isBefore(LastLogin)) {
-                current = when (event.repeatUnit) {
-                    "Months" -> current.plusMonths(event.repeatInterval.toLong())
-                    "Weeks" -> current.plusWeeks(event.repeatInterval.toLong())
-                    "Days" -> current.plusDays(event.repeatInterval.toLong())
-                    "Years" -> current.plusYears(event.repeatInterval.toLong())
-                    else -> break
+                when (event.repeatUnit) {
+                    "Months" -> {
+                        generatedesiredSequence(event, ChronoUnit.MONTHS)
+                    }
+
+                    "Weeks" -> {
+                        generatedesiredSequence(event, ChronoUnit.WEEKS)
+                    }
+
+                    "Days" -> {
+                        generatedesiredSequence(event, ChronoUnit.DAYS)
+                    }
+
+                    "Years" -> {
+                        generatedesiredSequence(event, ChronoUnit.YEARS)
+                    }
+
+                    else -> emptyList()
                 }
             }
-            while ((current.isBefore(NewLogin) || current.isEqual(NewLogin)) && (current.isBefore(event.endDate) || current.isEqual(event.endDate))) {
-                if (current in LastLogin..NewLogin) {
-                    val eventOccurrence = TemporaryLists.DemonstrationEvent(
-                        referenceId = event.id,
-                        name = event.name,
-                        date = current,
-                        amount = event.amount,
-                        type = "Recurring"
-                    )
-                    occurrences.add(eventOccurrence)
-                }
-                current = when (event.repeatUnit) {
-                    "Months" -> current.plusMonths(event.repeatInterval.toLong())
-                    "Weeks" -> current.plusWeeks(event.repeatInterval.toLong())
-                    "Days" -> current.plusDays(event.repeatInterval.toLong())
-                    "Years" -> current.plusYears(event.repeatInterval.toLong())
-                    else -> break
-                }
-            }
-        }
+        )
         val totalValue = occurrences.fold(0f) { acc, event -> acc + event.amount }
-        return totalValue
+        if(key == 0) {
+            return totalValue
+        }
+        else{
+            return occurrences
+        }
+
     }
 
-
-
-
-
-
-
-
-
-
-
-   /* suspend fun getOccurrencesForMonthRecurring(
-        year: Int,
-        month: Int
-    ): MutableList<TemporaryLists.DemonstrationEvent> {
+    fun moneyProjection(startDate: LocalDate, goalDate: LocalDate?, goalAmount_: Float?, baseAmount: Float): Pair<Float?, LocalDate?> {
         val occurrences = mutableListOf<TemporaryLists.DemonstrationEvent>()
-        val startOfMonth = LocalDate.of(year, month, 1)
-        val endOfMonth = startOfMonth.plusMonths(1).minusDays(1)
-        val filteredFundsEventRecurring = FundsEventsRecurring.value?.filter { event ->
-            !(event.endDate != null && event.endDate.isBefore(startOfMonth)) && !(event.startDate.isAfter(endOfMonth))
-        } ?: emptyList()
+        fun alignToStart(
+            date: LocalDate,
+            interval: Long,
+            unit: ChronoUnit,
+            start: LocalDate
+        ): LocalDate {
+            val periodsBetween = unit.between(date, start) / interval
+            return date.plus(periodsBetween * interval, unit).let {
+                if (it.isBefore(start)) it.plus(interval, unit) else it
+            }
+        }
 
-
-        for (event in filteredFundsEventRecurring) {
-            var current = event.startDate
-            when (event.repeatUnit) {
-                "Months" -> {
-                    while (current.isBefore(startOfMonth)) {
-                        current = current.plusMonths(event.repeatInterval.toLong())
-                    }
-                    if (current.monthValue == month && current.year == year) {
-                        val eventOccurrence = TemporaryLists.DemonstrationEvent(
+        fun generatedesiredSequence(
+            event: DBType.FundsEventRecurring,
+            unit: ChronoUnit
+        ): List<TemporaryLists.DemonstrationEvent> {
+            val firstOccurrence =
+                alignToStart(event.startDate, event.repeatInterval.toLong(), unit, startDate)
+            return generateSequence(firstOccurrence) { current ->
+                current.plusMonths(event.repeatInterval.toLong())
+            }.takeWhile { current ->
+                current <= goalDate && (event.endDate == null || current <= event.endDate)
+            }.map { current ->
+                val maxDayOfMonth = current.lengthOfMonth()
+                TemporaryLists.DemonstrationEvent(
+                    referenceId = event.id,
+                    name = event.name,
+                    date = LocalDate.of(
+                        current.year,
+                        current.month,
+                        event.startDate.dayOfMonth.coerceAtMost(maxDayOfMonth)
+                    ),
+                    amount = event.amount,
+                    type = "Recurring"
+                )
+            }.toList()
+        }
+        if (goalAmount_ == 0f && goalDate != null) {
+            occurrences.addAll(
+                FundsEvents.value?.asSequence()
+                    ?.filter { event -> event.date in startDate..goalDate }
+                    ?.map { event ->
+                        TemporaryLists.DemonstrationEvent(
                             referenceId = event.id,
                             name = event.name,
-                            date = current,
+                            date = event.date,
                             amount = event.amount,
                             type = "Static"
                         )
-                        occurrences.add(eventOccurrence)
+                    }
+                    ?.toList() ?: emptyList())
+
+            val filteredFundsEventRecurring = FundsEventsRecurring.value?.filter { event ->
+                event.startDate <= goalDate
+            } ?: emptyList()
+            occurrences.addAll(
+                filteredFundsEventRecurring.flatMap { event ->
+                    val eventDay = event.startDate.dayOfMonth
+                    when (event.repeatUnit) {
+                        "Months" -> { generatedesiredSequence(event, ChronoUnit.MONTHS) }
+                        "Weeks" -> { generatedesiredSequence(event, ChronoUnit.WEEKS) }
+                        "Days" -> { generatedesiredSequence(event, ChronoUnit.DAYS) }
+                        "Years" -> { generatedesiredSequence(event, ChronoUnit.YEARS) }
+                        else -> emptyList()
                     }
                 }
-                "Weeks" -> {
-                    while (current.isBefore(startOfMonth)) {
-                        current = current.plusWeeks(event.repeatInterval.toLong())
-                    }
-                    while (current.isBefore(endOfMonth) || current.isEqual(endOfMonth)) {
-                        val eventOccurrence = TemporaryLists.DemonstrationEvent(
-                            referenceId = event.id,
-                            name = event.name,
-                            date = current,
-                            amount = event.amount,
-                            type = "Recurring"
-                        )
-                        occurrences.add(eventOccurrence)
-                        current = current.plusWeeks(event.repeatInterval.toLong())
-                    }
-                }
-                "Days" -> {
-                    while (current.isBefore(startOfMonth)) {
-                        current = current.plusDays(event.repeatInterval.toLong())
-                    }
-                    while (current.isBefore(endOfMonth) || current.isEqual(endOfMonth)) {
-                        val eventOccurrence = TemporaryLists.DemonstrationEvent(
-                            referenceId = event.id,
-                            name = event.name,
-                            date = current,
-                            amount = event.amount,
-                            type = "Recurring"
-                        )
-                        occurrences.add(eventOccurrence)
-                        current = current.plusDays(event.repeatInterval.toLong())
-                    }
-                }
-                "Years" -> {
-                    while (current.isBefore(startOfMonth)) {
-                        current = current.plusYears(event.repeatInterval.toLong())
-                    }
-                    while (current.isBefore(endOfMonth) || current.isEqual(endOfMonth)) {
-                        val eventOccurrence = TemporaryLists.DemonstrationEvent(
-                            referenceId = event.id,
-                            name = event.name,
-                            date = current,
-                            amount = event.amount,
-                            type = "Recurring"
-                        )
-                        occurrences.add(eventOccurrence)
-                        current = current.plusYears(event.repeatInterval.toLong())
-                    }
-                }
-            }
+            )
+            val totalValue = occurrences.fold(0f) { acc, event -> acc + event.amount }
+            return Pair(totalValue + baseAmount, null)
         }
-        return occurrences
-    }*/
+        else {
+            val goalAmount: Float? = goalAmount_
+            val finalGoalAmount = goalAmount ?: 0f
+
+            val foundDate: LocalDate
+            val tempListOfOccurences = mutableListOf<TemporaryLists.DemonstrationEvent>()
+            val differenceBetween: Float = getOccurencesBetweenLastAndCurrentLogin(startDate, startDate.plusMonths(1), 0) as Float
+            var requiredMonthsProjection = ((finalGoalAmount - baseAmount) / differenceBetween)
+            Log.d("Money Projection", "FinalGoalAmount is $finalGoalAmount")
+            Log.d("Money Projection", "differenceBetween is $differenceBetween")
+            Log.d("Money Projection", "requiredMonthsProjection is $requiredMonthsProjection")
+            if (requiredMonthsProjection.toDouble() != 0.0) {
+                if (requiredMonthsProjection.toDouble() > 50 ){
+                    return Pair(null, null)
+                }
+                val _requiredMonthsProjection = requiredMonthsProjection.roundToInt()
+                @Suppress("UNCHECKED_CAST")
+                tempListOfOccurences.addAll(getOccurencesBetweenLastAndCurrentLogin(
+                    startDate,
+                    startDate.plusMonths((1).toLong()),
+                    1
+                )
+                        as List<TemporaryLists.DemonstrationEvent>)
+                for (i in 1 until _requiredMonthsProjection) {
+                    val tempOccurrences = getOccurencesBetweenLastAndCurrentLogin(
+                        startDate.plusMonths(i.toLong()),
+                        startDate.plusMonths((i + 1).toLong()),
+                        1
+                    )
+
+                    if (tempOccurrences is List<*>) {
+                        @Suppress("UNCHECKED_CAST")
+                        tempListOfOccurences.addAll(tempOccurrences as List<TemporaryLists.DemonstrationEvent>)
+                    } else {
+                        Log.d("MoneyProjection","Unexpected return type from getOccurencesBetweenLastAndCurrentLogin: ${tempOccurrences::class}")
+                    }
+                }
+                val occurrencesByDate: Map<LocalDate, List<TemporaryLists.DemonstrationEvent>> =
+                    tempListOfOccurences.groupBy { it.date }
+
+                var accumulatedAmount = baseAmount
+                for ((date, events) in occurrencesByDate.toSortedMap()) {
+                    for (event in events) {
+                        accumulatedAmount += event.amount
+                        if (accumulatedAmount >= finalGoalAmount){
+                            foundDate = date
+                            return Pair(null, foundDate)
+                        }
+                    }
+                    if (accumulatedAmount >= finalGoalAmount){
+                        foundDate = date
+                        return Pair(null, foundDate)
+                    }
+                }
+            } else {
+                Log.d("MoneyProjection", "Division by zero")
+            }
+            return Pair(null, null)
+        }
+    }
 }

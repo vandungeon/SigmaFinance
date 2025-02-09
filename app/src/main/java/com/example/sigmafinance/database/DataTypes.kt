@@ -1,11 +1,12 @@
 package com.example.sigmafinance.database
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 import java.util.Date
 
-class DBType {
+sealed class DBType {
     @Entity(tableName = "FundsEvents")
     data class FundsEvent(
         @PrimaryKey(autoGenerate = true)
@@ -14,7 +15,12 @@ class DBType {
         val date: LocalDate,
         val amount: Float
     )
-    @Entity(tableName = "FundsRecurringEvents")
+    @Entity(tableName = "FundsRecurringEvents",
+        indices = [
+            Index(value = ["startDate"]),
+            Index(value = ["endDate"]),
+            Index(value = ["repeatUnit"])
+        ])
     data class FundsEventRecurring(
         @PrimaryKey(autoGenerate = true)
         val id: Int = 0,

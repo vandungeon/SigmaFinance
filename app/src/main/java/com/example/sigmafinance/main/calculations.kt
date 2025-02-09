@@ -1,7 +1,6 @@
 package com.example.sigmafinance.main
 
 import android.util.Log
-import androidx.lifecycle.LiveData
 import com.example.sigmafinance.database.DBType
 import com.example.sigmafinance.database.TemporaryLists
 import java.time.YearMonth
@@ -55,11 +54,6 @@ private fun addInterval(date: LocalDate?, interval: Int, unit: String?): LocalDa
         else -> date // No addition if unit is not recognized
     }
 }
-
-fun getFirstDayOfMonth(year: Int, month: Int): DayOfWeek {
-    val firstDay = LocalDate.of(year, month, 1)
-    return firstDay.dayOfWeek // Get day of the week for the first day of the mo
-}
 enum class DayOfWeekDisplay(val shortName: String, val fullName: String) {
     MONDAY("Mon", "Monday"),
     TUESDAY("Tue", "Tuesday"),
@@ -85,7 +79,7 @@ enum class DayOfWeekDisplay(val shortName: String, val fullName: String) {
 }
 
 
-suspend fun getOccurrencesForYearStatic(
+fun getOccurrencesForYearStatic(
     events: List<DBType.FundsEvent>,
     year: Int
 ): List<TemporaryLists.DemonstrationEvent> {
@@ -108,7 +102,7 @@ suspend fun getOccurrencesForYearStatic(
 }
 
 
-suspend fun getOccurrencesForYearRecurring(
+fun getOccurrencesForYearRecurring(
     events: List<DBType.FundsEventRecurring>,
     year: Int
 ): List<TemporaryLists.DemonstrationEvent> {
@@ -125,58 +119,34 @@ suspend fun getOccurrencesForYearRecurring(
             if (it.isBefore(start)) it.plus(interval, unit) else it
         }
     }
-
+    fun generatedesiredSequence(event: DBType.FundsEventRecurring,  unit: ChronoUnit): List<TemporaryLists.DemonstrationEvent>{
+        val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), unit, startOfYear)
+        return generateSequence(firstOccurrence) { current ->
+            current.plusMonths(event.repeatInterval.toLong())
+        }.takeWhile { current ->
+            current <= endOfYear && (event.endDate == null || current <= event.endDate)
+        }.map { current ->
+            val maxDayOfMonth = current.lengthOfMonth()
+            TemporaryLists.DemonstrationEvent(
+                referenceId = event.id,
+                name = event.name,
+                date = LocalDate.of(current.year, current.month, event.startDate.dayOfMonth.coerceAtMost(maxDayOfMonth)),
+                amount = event.amount,
+                type = "Recurring"
+            )
+        }.toList()
+    }
     return filteredRecurringEvents.flatMap { event ->
         val eventDay = event.startDate.dayOfMonth
         when (event.repeatUnit) {
             "Months" -> {
-                val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), ChronoUnit.MONTHS, startOfYear)
-                generateSequence(firstOccurrence) { current ->
-                    current.plusMonths(event.repeatInterval.toLong())
-                }.takeWhile { current ->
-                    current <= endOfYear && (event.endDate == null || current <= event.endDate)
-                }.map { current ->
-                    val maxDayOfMonth = current.lengthOfMonth()
-                    TemporaryLists.DemonstrationEvent(
-                        referenceId = event.id,
-                        name = event.name,
-                        date = LocalDate.of(current.year, current.month, eventDay.coerceAtMost(maxDayOfMonth)),
-                        amount = event.amount,
-                        type = "Recurring"
-                    )
-                }.toList()
+                generatedesiredSequence(event, ChronoUnit.MONTHS)
             }
             "Weeks" -> {
-                val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), ChronoUnit.WEEKS, startOfYear)
-                generateSequence(firstOccurrence) { current ->
-                    current.plusWeeks(event.repeatInterval.toLong())
-                }.takeWhile { current ->
-                    current <= endOfYear && (event.endDate == null || current <= event.endDate)
-                }.map { current ->
-                    TemporaryLists.DemonstrationEvent(
-                        referenceId = event.id,
-                        name = event.name,
-                        date = current,
-                        amount = event.amount,
-                        type = "Recurring"
-                    )
-                }.toList()
+                generatedesiredSequence(event, ChronoUnit.WEEKS)
             }
             "Days" -> {
-                val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), ChronoUnit.DAYS, startOfYear)
-                generateSequence(firstOccurrence) { current ->
-                    current.plusDays(event.repeatInterval.toLong())
-                }.takeWhile { current ->
-                    current <= endOfYear && (event.endDate == null || current <= event.endDate)
-                }.map { current ->
-                    TemporaryLists.DemonstrationEvent(
-                        referenceId = event.id,
-                        name = event.name,
-                        date = current,
-                        amount = event.amount,
-                        type = "Recurring"
-                    )
-                }.toList()
+                generatedesiredSequence(event, ChronoUnit.DAYS)
             }
             "Years" -> {
                 if ((year - event.startDate.year) % event.repeatInterval == 0) {

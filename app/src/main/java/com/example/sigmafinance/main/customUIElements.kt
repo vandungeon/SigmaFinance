@@ -1,16 +1,18 @@
 package com.example.sigmafinance.main
 
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -19,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,13 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.sigmafinance.R
 import com.example.sigmafinance.database.TemporaryLists
 import com.example.sigmafinance.ui.theme.Purple40
-import com.example.sigmafinance.ui.theme.accentGrey
-import com.example.sigmafinance.ui.theme.customTitle
 import com.example.sigmafinance.ui.theme.dialogHeader
 import com.example.sigmafinance.ui.theme.jordyBlue
 import com.example.sigmafinance.ui.theme.montserratFontFamily
@@ -58,7 +60,7 @@ fun customTextFieldColors(): TextFieldColors {
             focusedTextColor = jordyBlue,
             focusedIndicatorColor = jordyBlue,
             unfocusedIndicatorColor = Color.Transparent,
-            focusedContainerColor = Color.Transparent,
+            focusedContainerColor = jordyBlue.copy(alpha = 0.1f),
             unfocusedContainerColor = Color.Transparent
 
     )
@@ -73,6 +75,16 @@ fun customButtonColors(): ButtonColors {
         disabledContentColor = Color.White.copy(alpha = 0.1f)
     )
 }
+@Composable
+fun GraphImage() {
+    Image(
+        painter = painterResource(id = R.drawable.graph1),
+        contentDescription = "Graph icon",
+        contentScale = ContentScale.Fit,
+
+    )
+}
+
 @Composable
 fun CustomTextField(
     value: String,
@@ -93,7 +105,7 @@ fun CustomTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier,
-        label = label?.let { { Text(text = it, fontFamily = montserratFontFamily) } },
+        label = label?.let { { Text(text = it, fontFamily = montserratFontFamily, color = labelColor) } },
         placeholder = placeholder?.let { { Text(text = it, fontFamily = montserratFontFamily, color = periwinkle) } },
         isError = isError,
         enabled = enabled,
@@ -112,7 +124,7 @@ fun AddFundsEvent(
 ) {
     var eventName by remember { mutableStateOf("") }
     var eventAmount by remember { mutableStateOf("") }
-    var repeatInterval by remember { mutableStateOf(1) } // Default repeat every 1 unit
+    var repeatInterval by remember { mutableIntStateOf(1) } // Default repeat every 1 unit
     var repeatUnit by remember { mutableStateOf("Don't repeat") }
     var endCondition by remember { mutableStateOf("Never") }
     var endAfterOccurrences by remember { mutableStateOf<Int?>(null) }
@@ -310,14 +322,14 @@ fun EditEvent(
     val coroutineScope = rememberCoroutineScope()
     var eventName by remember { mutableStateOf(event.name) }
     var eventAmount by remember { mutableStateOf(event.amount.toString()) }
-    var repeatInterval by remember { mutableStateOf(1) }
+    var repeatInterval by remember { mutableIntStateOf(1) }
     var repeatUnit by remember { mutableStateOf("Days") }
     var endCondition by remember { mutableStateOf("Never") }
     var endAfterOccurrences by remember { mutableStateOf<Int?>(null) }
     var endDateInput by remember { mutableStateOf("") }
     var isDateValid by remember { mutableStateOf(true) }
 
-    var repeatUnits = listOf("Don't repeat","Days", "Weeks", "Months", "Years")
+    val repeatUnits = listOf("Days", "Weeks", "Months", "Years")
     val endConditions = listOf("Never", "After N times", "Until date")
     var expandedUnit by remember { mutableStateOf(false) }
     var expandedEndCondition by remember { mutableStateOf(false) }
@@ -406,8 +418,6 @@ fun EditEvent(
     }
     else {
         val selectedEvent =  viewModel.getRecurringEventById(event.referenceId)
-
-        repeatUnits = listOf("Days", "Weeks", "Months", "Years")
         expandedUnit = true
         Dialog(onDismissRequest = { onDismiss() }) {
             Surface(
@@ -652,3 +662,4 @@ fun EnterNewMoneyValueDialog(
         }
     }
 }
+
