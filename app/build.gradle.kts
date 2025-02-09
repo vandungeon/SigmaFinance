@@ -56,6 +56,7 @@ android {
 dependencies {
 
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.graphics.shapes.android)
     annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
@@ -65,6 +66,7 @@ dependencies {
     implementation(libs.androidx.room.guava)
     testImplementation(libs.androidx.room.testing)
     implementation(libs.androidx.room.paging)
+    implementation(libs.androidx.datastore.preferences)
 
 
 

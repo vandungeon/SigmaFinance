@@ -51,6 +51,7 @@ roomKtx = "2.6.1"
 runtimeLivedataVersion = "1.7.1"
 firebaseCrashlyticsBuildtools = "3.0.2"
 constraintlayoutCore = "1.0.4"
+graphicsShapesAndroidVersion = "1.0.1"
 
 [libraries]
 androidx-activity-compose-v190 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -124,6 +125,7 @@ ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
 androidx-constraintlayout-core = { group = "androidx.constraintlayout", name = "constraintlayout-core", version.ref = "constraintlayoutCore" }
+androidx-graphics-shapes-android = { group = "androidx.graphics", name = "graphics-shapes-android", version.ref = "graphicsShapesAndroidVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -11,7 +11,7 @@ import androidx.room.TypeConverters
 import com.example.sigmafinance.database.ListConverter
 import java.time.LocalDate
 
-// Add the LocalDateConverter class here or in a separate file
+
 class LocalDateConverter {
     private val formatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -41,7 +41,7 @@ class ListConverter {
 }
 @Database(
     entities = [DBType.FundsEventRecurring::class, DBType.FundsEvent::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(LocalDateConverter::class)
