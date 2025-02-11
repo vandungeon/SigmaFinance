@@ -6,10 +6,10 @@ import com.example.sigmafinance.database.DataAccessObjects
 
 class Repository (private val dataAccessObjects: DataAccessObjects){
 
-    suspend fun InsertRecurringEvent(event: DBType.FundsEventRecurring){
+    suspend fun insertRecurringEvent(event: DBType.FundsEventRecurring){
         dataAccessObjects.insertRecurringEvent(event)
     }
-    suspend fun InsertEvent(event: DBType.FundsEvent){
+    suspend fun insertEvent(event: DBType.FundsEvent){
         dataAccessObjects.insertEvent(event)
     }
 
@@ -27,13 +27,5 @@ class Repository (private val dataAccessObjects: DataAccessObjects){
     }
     val readFundsRecurringEvents: LiveData<List<DBType.FundsEventRecurring>> = dataAccessObjects.readFundsRecurringEvents()
     val readFundsEvents: LiveData<List<DBType.FundsEvent>> = dataAccessObjects.readFundsEvents()
-
-
-    fun cleanFundsRecurringEvents(){
-        dataAccessObjects.cleanFundsRecurringEvents()
-    }
-    fun cleanFundsEvents(){
-        dataAccessObjects.cleanFundsEvents()
-    }
 
 }

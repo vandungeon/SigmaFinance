@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -124,12 +122,12 @@ fun AddFundsEvent(
 ) {
     var eventName by remember { mutableStateOf("") }
     var eventAmount by remember { mutableStateOf("") }
-    var repeatInterval by remember { mutableIntStateOf(1) } // Default repeat every 1 unit
+    var repeatInterval by remember { mutableIntStateOf(1) }
     var repeatUnit by remember { mutableStateOf("Don't repeat") }
     var endCondition by remember { mutableStateOf("Never") }
-    var endAfterOccurrences by remember { mutableStateOf<Int?>(null) }
-    var endDateInput by remember { mutableStateOf("") } // String to take user input for date
-    var isDateValid by remember { mutableStateOf(true) } // To check date validity
+    var endAfterOccurrences by remember { mutableStateOf("0") }
+    var endDateInput by remember { mutableStateOf("") }
+    var isDateValid by remember { mutableStateOf(true) }
 
     val repeatUnits = listOf("Don't repeat","Days", "Weeks", "Months", "Years")
     val endConditions = listOf("Never", "After N times", "Until date")
@@ -141,8 +139,6 @@ fun AddFundsEvent(
     fun validateInput(name: String, amount: String): Boolean {
         return name.isNotEmpty() && amount.toFloatOrNull() != null && (endCondition != "Until date" || isDateValid)
     }
-
-    // Date validation function
     fun validateDate(input: String): Boolean {
         return try {
             LocalDate.parse(input, dateFormatter)
@@ -225,7 +221,6 @@ fun AddFundsEvent(
                         )
                         Text(repeatUnit, color = Color.White)
                     }
-
                     Spacer(modifier = Modifier.width(8.dp))
                     ExposedDropdownMenuBox(
                         expanded = expandedEndCondition,
@@ -258,17 +253,16 @@ fun AddFundsEvent(
                             }
                         }
                     }
-
                     when (endCondition) {
                         "After N times" -> {
                             CustomTextField(
-                                value = endAfterOccurrences?.toString() ?: "",
-                                onValueChange = { endAfterOccurrences = it.toIntOrNull() },
+                                value = endAfterOccurrences,
+                                onValueChange = {
+                                    endAfterOccurrences = if (it.toIntOrNull() != null && it.toInt() > 0){ it } else {""}},
                                 label = "Occurrences",
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-
                         "Until date" -> {
                             CustomTextField(
                                 value = endDateInput,
@@ -299,7 +293,7 @@ fun AddFundsEvent(
                         } else {
                             null
                         }
-                        onConfirm(eventName, eventAmount, repeatInterval, repeatUnit, endCondition, endAfterOccurrences, endDate)
+                        onConfirm(eventName, eventAmount, repeatInterval, repeatUnit, endCondition, endAfterOccurrences.toInt(), endDate)
                         onDismiss()
                     }, colors = customButtonColors(), enabled = validateInput(eventName, eventAmount)) {
                         Text("Confirm")
@@ -309,7 +303,6 @@ fun AddFundsEvent(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEvent(
@@ -325,7 +318,7 @@ fun EditEvent(
     var repeatInterval by remember { mutableIntStateOf(1) }
     var repeatUnit by remember { mutableStateOf("Days") }
     var endCondition by remember { mutableStateOf("Never") }
-    var endAfterOccurrences by remember { mutableStateOf<Int?>(null) }
+    var endAfterOccurrences by remember { mutableStateOf("0") }
     var endDateInput by remember { mutableStateOf("") }
     var isDateValid by remember { mutableStateOf(true) }
 
@@ -373,7 +366,6 @@ fun EditEvent(
                         label = "Amount",
                         modifier = Modifier.fillMaxWidth(1f)
                     )
-
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -530,13 +522,12 @@ fun EditEvent(
                         when (endCondition) {
                             "After N times" -> {
                                 CustomTextField(
-                                    value = endAfterOccurrences?.toString() ?: "",
-                                    onValueChange = { endAfterOccurrences = it.toIntOrNull() },
+                                    value = endAfterOccurrences,
+                                    onValueChange = { endAfterOccurrences = if (it.toIntOrNull() != null && it.toInt() > 0){ it } else {""}},
                                     label = "Occurrences",
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
-
                             "Until date" -> {
                                 CustomTextField(
                                     value = endDateInput,
@@ -563,10 +554,9 @@ fun EditEvent(
                         }
                         Button(onClick = {
                             onDismiss()
-                            coroutineScope.launch {
                                 if (selectedEvent != null) {
                                     viewModel.deleteEventRecurring(selectedEvent)
-                                } } }, contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
+                                }  }, contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
                             colors = customButtonColors()) {
                             Text("Delete")
                         }
@@ -576,13 +566,12 @@ fun EditEvent(
                             } else {
                                 null
                             }
-                            coroutineScope.launch {
                                 val newEvent = selectedEvent?.copy(name = eventName,
                                     amount = eventAmount.toFloat(),
                                     repeatInterval = repeatInterval,
                                     repeatUnit = repeatUnit,
                                     endCondition = endCondition,
-                                    endAfterOccurrences = endAfterOccurrences,
+                                    endAfterOccurrences = endAfterOccurrences.toInt(),
                                     endDate = if(endCondition != "Never") {calculateEndDate(startDate = LocalDate.of(
                                         currentDate.year,
                                         currentDate.month,
@@ -591,16 +580,14 @@ fun EditEvent(
                                         repeatInterval,
                                         repeatUnit,
                                         endCondition,
-                                        endAfterOccurrences,
+                                        endAfterOccurrences.toInt(),
                                         endDate)} else {null})
                                 if (newEvent != null) {
                                     viewModel.updateEventRecurring(newEvent)
                                 }
-
-                            }
                             onDismiss()
                         }
-                            , contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
+                            ,contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
                             colors = customButtonColors(), enabled = validateInput(eventName, eventAmount)) {
                             Text("Confirm")
                         }
@@ -618,13 +605,8 @@ fun EnterNewMoneyValueDialog(
     onDismiss: () -> Unit,
     onConfirm: (newValue: Float) -> Unit
 ){
-
-    var temporaryValue by remember {
-        mutableStateOf(previousValue.toString())
-    }
-    fun validateInput(amount: String): Boolean {
-        return amount.toFloatOrNull() != null
-    }
+    var temporaryValue by remember { mutableStateOf(previousValue.toString()) }
+    fun validateInput(amount: String): Boolean { return amount.toFloatOrNull() != null }
     Dialog(onDismissRequest = { onDismiss() }) {
         Surface(
             shape = MaterialTheme.shapes.medium,
@@ -649,9 +631,7 @@ fun EnterNewMoneyValueDialog(
                         Text("Cancel")
                     }
                     Button(onClick = {
-                        onConfirm(
-                            temporaryValue.toFloat()
-                        )
+                        onConfirm(temporaryValue.toFloat())
                         onDismiss()
                     }, colors = customButtonColors(), enabled = validateInput(temporaryValue)) {
                         Text("Confirm")

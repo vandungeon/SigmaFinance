@@ -33,7 +33,6 @@ val interFontFamily = FontFamily(
     Font(R.font.inter),
     Font(R.font.inter_italic),
 )
-// Set of Material typography styles to start with
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -85,23 +84,9 @@ val customText = TextStyle(
     letterSpacing = 0.5.sp
 )
 
-val standartText =  TextStyle(
+val standardText =  TextStyle(
     fontFamily = montserratFontFamily,
     fontWeight = FontWeight.Normal,
     fontStyle = FontStyle.Normal,
     fontSize = 18.sp
-)
-
-val hintText = TextStyle(
-    fontFamily = interFontFamily,
-    fontWeight = FontWeight.Normal,
-    fontStyle = FontStyle.Normal,
-    fontSize = 14.sp
-)
-
-val dialogMain = TextStyle(
-    fontFamily = montserratFontFamily,
-    fontSize = 12.sp,
-    lineHeight = 16.sp,
-    letterSpacing = 0.5.sp
 )

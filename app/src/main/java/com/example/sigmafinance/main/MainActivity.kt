@@ -12,7 +12,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -51,7 +49,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -72,9 +69,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,22 +80,16 @@ import com.example.sigmafinance.navigation.NavigationComponent
 import com.example.sigmafinance.ui.theme.Purple40
 import com.example.sigmafinance.ui.theme.SigmaFinanceTheme
 import com.example.sigmafinance.ui.theme.accentGrey
-import com.example.sigmafinance.ui.theme.airSuperiorityBlue
 import com.example.sigmafinance.ui.theme.balanceGreen
 import com.example.sigmafinance.ui.theme.balanceRed
 import com.example.sigmafinance.ui.theme.customText
 import com.example.sigmafinance.ui.theme.customTitle
 import com.example.sigmafinance.ui.theme.dialogHeader
-import com.example.sigmafinance.ui.theme.interFontFamily
-import com.example.sigmafinance.ui.theme.montserratFontFamily
 import com.example.sigmafinance.ui.theme.periwinkle
 import com.example.sigmafinance.ui.theme.richBlack
-import com.example.sigmafinance.ui.theme.standartText
+import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -123,36 +111,39 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "MutableCollectionMutableState")
 @Composable
 fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    //basic functionality vital information
     val currentAmountOfMoney by viewModel.getMoneyValue().collectAsState(initial = 0.0f)
     var currentDate by remember { viewModel.currentDate }
     var listOfDays by remember { viewModel.listOfDays }
-    var selectedEventsLists by remember {
-        mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>())
-    }
+    var selectedEventsLists by remember { mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>()) }
+    val lastLogin by viewModel.getLastLogin().collectAsState(initial = LocalDate.now())
+    //ui
+    var newDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedNetIncome by remember { mutableFloatStateOf(0f) }
-    val daysOfWeek = DayOfWeek.entries
     var selectedDate by remember { mutableStateOf("${currentDate.dayOfMonth}") }
+    var selectedEvent by remember { mutableStateOf<TemporaryLists.DemonstrationEvent?>(null) }
+    val daysOfWeek = DayOfWeek.entries
+    var toggleAddEventDialog by remember { mutableStateOf(false) }
+    var toggleEnterNewValueDialog by remember { mutableStateOf(false) }
+    //triggers
     var updateListsTrigger by remember { mutableLongStateOf(0L) }
     var updateYearListsTrigger by remember { mutableLongStateOf(0L) }
     var updateYearListsKey by remember { mutableIntStateOf(0) }
-    var toggleAddEventDialog by remember { mutableStateOf(false) }
-    var toggleCalculateDialog by remember { mutableStateOf(false) }
-    var toggleEnterNewValueDialog by remember { mutableStateOf(false) }
-    var selectedEvent by remember { mutableStateOf<TemporaryLists.DemonstrationEvent?>(null) }
-    val lastLogin by viewModel.getLastLogin().collectAsState(initial = LocalDate.now())
-    val events: List<DBType.FundsEvent> by viewModel.FundsEvents.observeAsState(emptyList())
-    val recurringEvents: List<DBType.FundsEventRecurring> by viewModel.FundsEventsRecurring.observeAsState(
-        emptyList()
-    )
-    var currentMonthEvents by remember {
-        mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>())
-    }
-    var newDate by remember { mutableStateOf(LocalDate.now()) }
+    //lists
+    val events: List<DBType.FundsEvent> by viewModel.fundsEvents.observeAsState(emptyList())
+    val recurringEvents: List<DBType.FundsEventRecurring> by viewModel.fundsEventsRecurring.observeAsState(emptyList())
+    var currentMonthEvents by remember { mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>()) }
     val currentYearEvents by viewModel.currentYearEvents.observeAsState(emptyList())
+/*    val eventTree: TreeMap<LocalDate, TemporaryLists.DemonstrationEvent> =
+        TreeMap(currentYearEvents.associateBy { it.date })*/
+    val eventTree = remember {
+        mutableStateOf(TreeMap(currentYearEvents.associateBy { it.date }))
+    }
+
     LaunchedEffect(updateYearListsTrigger) {
         Log.d("Main Activity", "updateYearListsTrigger triggered, newDate is $newDate")
         viewModel.updateYearlyLists(updateYearListsKey, newDate)
@@ -161,7 +152,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         newDate = currentDate.plusMonths(1)
         if (newDate.year > currentDate.year) {
             Log.d("incrementDate", "incrementDate caused update yearly lists")
-            Log.d("incrementDate", "newDate is $newDate")
             updateYearListsKey = 2
             updateYearListsTrigger = System.currentTimeMillis()
 
@@ -170,18 +160,15 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
         updateListsTrigger = System.currentTimeMillis()
-        selectedEventsLists =
-            currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
+        selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
         selectedNetIncome = selectedEventsLists.sumOf { it.amount.toDouble() }.toFloat()
     }
-    val eventTree: TreeMap<LocalDate, TemporaryLists.DemonstrationEvent> =
-        TreeMap(currentYearEvents.associateBy { it.date })
 
     fun updateCurrentMonthEvents(targetMonth: YearMonth) {
         val startOfMonth = targetMonth.atDay(1)
         val endOfMonth = targetMonth.atEndOfMonth()
-        val monthEvents = eventTree.subMap(startOfMonth, true, endOfMonth, true).values.toList()
-        currentMonthEvents = monthEvents
+        eventTree.value = TreeMap(currentYearEvents.associateBy { it.date })
+        currentMonthEvents = eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.toList()
     }
     fun decrementDate() {
         newDate = currentDate.minusMonths(1)
@@ -194,14 +181,11 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
         updateListsTrigger = System.currentTimeMillis()
-        selectedEventsLists =
-            currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
+        selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
         selectedNetIncome = selectedEventsLists.sumOf { it.amount.toDouble() }.toFloat()
     }
     LaunchedEffect(updateListsTrigger, events, recurringEvents, currentYearEvents) {
-        CoroutineScope(Dispatchers.Main).launch {
             updateCurrentMonthEvents(YearMonth.of(currentDate.year, currentDate.month))
-        }
     }
     LaunchedEffect(events, recurringEvents) {
         updateYearListsKey = 0
@@ -211,7 +195,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
     LaunchedEffect(Unit) {
         if (lastLogin != LocalDate.now()) {
             viewModel.saveMoneyValue(
-                viewModel.getOccurencesBetweenLastAndCurrentLogin(
+                viewModel.getOccurrencesBetweenLastAndCurrentLogin(
                     lastLogin,
                     LocalDate.now(), 0
                 ) as Float + currentAmountOfMoney
@@ -222,13 +206,11 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
             )
             viewModel.saveLastLogin(LocalDate.now())
         }
-
     }
 
     Scaffold(
         floatingActionButton = {
-            Column (modifier = Modifier.padding(0.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp) ){
+            Column (verticalArrangement = Arrangement.spacedBy(8.dp) ){
                 ExtendedFloatingActionButton(modifier = Modifier.padding(PaddingValues(0.dp)) ,
                     onClick = { navController.navigate("MoneyProjection/$currentAmountOfMoney") },
                     content = {
@@ -252,7 +234,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     },
                     containerColor = periwinkle
                 )
-
             }
         }
     ) { innerPadding ->
@@ -277,8 +258,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     verticalAlignment = Alignment.Top
                 ) {
                 Text(text = "$currentAmountOfMoney UAH", fontSize = 22.sp, color = periwinkle)
-
-                
             }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -307,7 +286,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
@@ -316,7 +294,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                         Text(
                             text = DayOfWeekDisplay.from(day).shortName.first().toString(),
                             fontWeight = FontWeight.Bold,
-                            style = standartText,
+                            style = standardText,
                             fontSize = 15.sp,
                             color = Color.White
                         )
@@ -342,12 +320,10 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                             animationSpec = tween(durationMillis = 500),
                             label = "Switching from white to purple if selected"
                         ).value
-                        val netIncome = currentMonthEvents.filter { it.date.dayOfMonth.toString() == dayNumber }.sumOf { it.amount.toDouble() }.toFloat()
-
+                        val netIncome = currentMonthEvents.filter { it.date.dayOfMonth == day.dayOfMonth }.sumOf { it.amount.toDouble() }.toFloat()
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .padding(0.dp)
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxSize(1f),
@@ -357,7 +333,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                 Text(text = dayNumber,
                                     fontSize = 14.sp,
                                     color = dayColor,
-                                    style = standartText,
+                                    style = standardText,
                                     modifier = Modifier
                                         .clickable(
                                             indication = null,
@@ -366,12 +342,9 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                             selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == dayNumber }
                                             selectedNetIncome = netIncome
                                         })
-
                                     Box(
                                         modifier = Modifier
-                                            .padding(all = 0.dp)
                                             .size(width = 25.dp, height = 3.dp)
-                                            .padding(0.dp)
                                             .background(
                                                 color = if (netIncome > 0) {
                                                     balanceGreen
@@ -385,7 +358,6 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                         contentAlignment = Alignment.BottomCenter
                                     ) {
                                     }
-
                             }
                         }
                     }
@@ -411,7 +383,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                             ) {
                                 Text(
                                     text = "Total: $selectedNetIncome",
-                                    style = standartText,
+                                    style = standardText,
                                     color = if (selectedNetIncome > 0) {
                                         balanceGreen
                                     } else {
@@ -442,7 +414,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                             shape = RoundedCornerShape(16.dp)
                                         ),
                                 ) {
-                                    Column (){
+                                    Column {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -452,17 +424,16 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                         {
                                             Text(
                                                 text = event.name,
-                                                style = standartText,
+                                                style = standardText,
                                             )
                                             Text(
-                                                text = event.amount.toString(), style = standartText,
+                                                text = event.amount.toString(), style = standardText,
                                                     color = if (event.amount > 0) {
                                                         balanceGreen
                                                     } else {
                                                         balanceRed
                                                     }
                                                 )
-
                                         }
                                         Row(
                                             modifier = Modifier
@@ -471,7 +442,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                         )
                                         {
                                             Text(
-                                                text = "Type: ${event.type}", style = standartText,
+                                                text = "Type: ${event.type}", style = standardText,
                                                 fontSize = 14.sp,
                                                 color = if (event.amount > 0) {
                                                     balanceGreen
@@ -499,7 +470,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                             selectedDate.toInt()
                                         )
                                     )
-                                    viewModel.InsertEvent(newEvent)
+                                    viewModel.insertEvent(newEvent)
                                 } else {
                                     val newEvent = DBType.FundsEventRecurring(
                                         name = eventName,
@@ -523,18 +494,15 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                                 repeatInterval = repeatInterval,
                                                 repeatUnit = repeatUnit,
                                                 endCondition = endCondition,
-                                                endAfterOccurrences =
-                                                endAfterOccurrences,
-                                                endDate =
-                                                endDate
+                                                endAfterOccurrences = endAfterOccurrences,
+                                                endDate = endDate
                                             )
                                         } else {
                                             null
                                         }
                                     )
-                                    viewModel.InsertRecurringEvent(newEvent)
+                                    viewModel.insertRecurringEvent(newEvent)
                                 }
-
                             }, onDismiss = { toggleAddEventDialog = false })
                     }
                     selectedEvent?.let {
@@ -565,15 +533,14 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, baseAmount: Float){
-    var toggleDateByAmountDialog by remember {
-        mutableStateOf(false)
-    }
-    var toggleAmountByDate by remember {
-        mutableStateOf(false)
-    }
-    var foundDate by remember { mutableStateOf<LocalDate?>(null) }
+    //toggles
+    var toggleDateByAmountDialog by remember { mutableStateOf(false) }
+    var toggleAmountByDate by remember { mutableStateOf(false) }
+    //search parameters
     var selectedAmount by remember  { mutableFloatStateOf(0f) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    //search results
+    var foundDate by remember { mutableStateOf<LocalDate?>(null) }
     var foundAmount by remember { mutableFloatStateOf(0f) }
         Scaffold(
             containerColor = richBlack,
@@ -589,23 +556,19 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         "Here you can find out when you will have certain sum of money, or how much you will have at certain date.",
-                        style = standartText, color = Color.White
+                        style = standardText, color = Color.White
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(onClick = { toggleAmountByDate = true }, colors = customButtonColors()) {
-                        Text("Find amount by date", style = standartText)
+                        Text("Find amount by date", style = standardText)
                     }
-
                     Button(
                         onClick = { toggleDateByAmountDialog = true },
                         colors = customButtonColors()
                     ) {
-                        Text("Find date by amount", style = standartText)
+                        Text("Find date by amount", style = standardText)
                     }
                 }
-            },
-            bottomBar = {
-
             }, modifier = Modifier.background(richBlack).fillMaxSize(1f)
         ) { innerPadding ->
             BackHandler {
@@ -614,13 +577,12 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
             Box(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .padding(start = 12.dp, end = 12.dp)
+                    .padding(horizontal = 12.dp)
                     .fillMaxSize(1f)
                     .background(richBlack), contentAlignment = Alignment.Center
             ) {
                 Column(Modifier.padding(top = 0.dp)) {
                     foundAmount.let { amount ->
-
                         if (amount != 0f) {
                             HorizontalDivider(
                                 modifier = Modifier
@@ -639,10 +601,9 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                     .padding(vertical = 6.dp)
                             )
                         }
-
                     }
                     foundDate?.let { date ->
-                        if (!(date.dayOfYear == LocalDate.now().dayOfYear && date.year == LocalDate.now().year)) {
+                        if (date >= LocalDate.now()) {
                             HorizontalDivider(
                                 modifier = Modifier
                                     .fillMaxWidth(1f)
@@ -660,9 +621,7 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                     .padding(vertical = 6.dp)
                             )
                         }
-
                     }
-
                 }
                 if (toggleAmountByDate) {
                     val datePickerState = rememberDatePickerState()
@@ -676,15 +635,14 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                         .atZone(ZoneId.systemDefault())
                                         .toLocalDate()
                                 }
-
                                 if (selectedDate!! >= LocalDate.now()) {
                                     val result = viewModel.moneyProjection(
                                         baseAmount = baseAmount,
-                                        goalAmount_ = 0f,
+                                        targetAmount = 0f,
                                         goalDate = selectedDate,
                                         startDate = LocalDate.now()
                                     )
-                                    val (floatValue, dateValue) = result
+                                    val (floatValue, _) = result
                                     if (floatValue != null) {
                                         foundAmount = floatValue
                                         foundDate = null
@@ -698,13 +656,9 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                     ) {
                         DatePicker(state = datePickerState)
                     }
-
                 }
                 if (toggleDateByAmountDialog) {
-                    var temporaryValue by remember {
-                        mutableStateOf("")
-                    }
-
+                    var temporaryValue by remember { mutableStateOf("") }
                     fun validateInput(amount: String): Boolean {
                         return amount.toFloatOrNull() != null
                     }
@@ -744,7 +698,7 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                             selectedAmount = temporaryValue.toFloat()
                                             val result = viewModel.moneyProjection(
                                                 baseAmount = baseAmount,
-                                                goalAmount_ = selectedAmount,
+                                                targetAmount = selectedAmount,
                                                 goalDate = null,
                                                 startDate = LocalDate.now()
                                             )
@@ -752,7 +706,7 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                                 "Money Projection",
                                                 "Selected amount is $selectedAmount"
                                             )
-                                            val (floatValue, dateValue) = result
+                                            val (_, dateValue) = result
                                             if (dateValue != null) {
                                                 Log.d(
                                                     "Money Projection",

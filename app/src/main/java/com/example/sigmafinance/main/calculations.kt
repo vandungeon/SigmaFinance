@@ -28,7 +28,7 @@ fun calculateEndDate(
     when (endCondition) {
         "After N times" -> {
             if (endAfterOccurrences != null) {
-                for (i in 1..endAfterOccurrences) {
+                for (i in 2..endAfterOccurrences) {
                     newEndDate = addInterval(newEndDate, repeatInterval ?: 1, repeatUnit)
                 }
             }
@@ -51,17 +51,17 @@ private fun addInterval(date: LocalDate?, interval: Int, unit: String?): LocalDa
         "Weeks" -> date?.plusWeeks(interval.toLong())
         "Months" -> date?.plusMonths(interval.toLong())
         "Years" -> date?.plusYears(interval.toLong())
-        else -> date // No addition if unit is not recognized
+        else -> date
     }
 }
-enum class DayOfWeekDisplay(val shortName: String, val fullName: String) {
-    MONDAY("Mon", "Monday"),
-    TUESDAY("Tue", "Tuesday"),
-    WEDNESDAY("Wed", "Wednesday"),
-    THURSDAY("Thu", "Thursday"),
-    FRIDAY("Fri", "Friday"),
-    SATURDAY("Sat", "Saturday"),
-    SUNDAY("Sun", "Sunday");
+enum class DayOfWeekDisplay(val shortName: String) {
+    MONDAY("Mon"),
+    TUESDAY("Tue"),
+    WEDNESDAY("Wed"),
+    THURSDAY("Thu"),
+    FRIDAY("Fri"),
+    SATURDAY("Sat"),
+    SUNDAY("Sun");
 
     companion object {
         fun from(dayOfWeek: DayOfWeek): DayOfWeekDisplay {
@@ -98,7 +98,6 @@ fun getOccurrencesForYearStatic(
             )
         }
         .toList()
-
 }
 
 
@@ -119,10 +118,10 @@ fun getOccurrencesForYearRecurring(
             if (it.isBefore(start)) it.plus(interval, unit) else it
         }
     }
-    fun generatedesiredSequence(event: DBType.FundsEventRecurring,  unit: ChronoUnit): List<TemporaryLists.DemonstrationEvent>{
+    fun generateDesiredSequence(event: DBType.FundsEventRecurring, unit: ChronoUnit): List<TemporaryLists.DemonstrationEvent>{
         val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), unit, startOfYear)
         return generateSequence(firstOccurrence) { current ->
-            current.plusMonths(event.repeatInterval.toLong())
+            current.plus(event.repeatInterval.toLong(), unit)
         }.takeWhile { current ->
             current <= endOfYear && (event.endDate == null || current <= event.endDate)
         }.map { current ->
@@ -130,7 +129,12 @@ fun getOccurrencesForYearRecurring(
             TemporaryLists.DemonstrationEvent(
                 referenceId = event.id,
                 name = event.name,
-                date = LocalDate.of(current.year, current.month, event.startDate.dayOfMonth.coerceAtMost(maxDayOfMonth)),
+                date = LocalDate.of(current.year, current.month,
+                        if (event.repeatUnit == "Months") {
+                            event.startDate.dayOfMonth.coerceAtMost(maxDayOfMonth)
+                        }
+                    else { current.dayOfMonth }
+                ),
                 amount = event.amount,
                 type = "Recurring"
             )
@@ -139,15 +143,9 @@ fun getOccurrencesForYearRecurring(
     return filteredRecurringEvents.flatMap { event ->
         val eventDay = event.startDate.dayOfMonth
         when (event.repeatUnit) {
-            "Months" -> {
-                generatedesiredSequence(event, ChronoUnit.MONTHS)
-            }
-            "Weeks" -> {
-                generatedesiredSequence(event, ChronoUnit.WEEKS)
-            }
-            "Days" -> {
-                generatedesiredSequence(event, ChronoUnit.DAYS)
-            }
+            "Months" -> { generateDesiredSequence(event, ChronoUnit.MONTHS) }
+            "Weeks" -> { generateDesiredSequence(event, ChronoUnit.WEEKS) }
+            "Days" -> { generateDesiredSequence(event, ChronoUnit.DAYS) }
             "Years" -> {
                 if ((year - event.startDate.year) % event.repeatInterval == 0) {
                     val maxDayOfMonth = startOfYear.lengthOfMonth()
