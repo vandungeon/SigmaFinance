@@ -38,6 +38,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
+import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -235,6 +238,37 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     containerColor = periwinkle
                 )
             }
+        },
+        bottomBar = {
+            Card(modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth(1f)){
+                Row(horizontalArrangement = Arrangement.Absolute.SpaceBetween) {
+                    IconButton(onClick = { }) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = "Add event",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = { }) {
+                        Icon(
+                            Icons.Filled.DateRange,
+                            contentDescription = "Money projection",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = { }) {
+                        GraphImage()
+                    }
+                    IconButton(onClick = { /* Add your click logic here */ }) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardDoubleArrowRight,
+                            contentDescription = "Next Arrow"
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Box(
@@ -399,58 +433,68 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                         }
                     }
                     if (selectedEventsLists.isNotEmpty()) {
-                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                            items(selectedEventsLists) { event ->
-                                //Events for days display
-                                Card(
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(periwinkle.copy(alpha = 0.4f)),
-                                    modifier = Modifier
-                                        .combinedClickable(onClick = {},
-                                            onLongClick = { selectedEvent = event })
-                                        .padding(vertical = 16.dp, horizontal = 8.dp)
-                                        .border(
-                                            BorderStroke(2.dp, color = periwinkle),
-                                            shape = RoundedCornerShape(16.dp)
-                                        ),
-                                ) {
-                                    Column {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(start = 12.dp, end = 12.dp, top = 16.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        )
-                                        {
-                                            Text(
-                                                text = event.name,
-                                                style = standardText,
+                        Card (modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth(1f)){
+                            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                                items(selectedEventsLists) { event ->
+                                    //Events for days display
+                                    Card(
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(periwinkle.copy(alpha = 0.4f)),
+                                        modifier = Modifier
+                                            .combinedClickable(onClick = {},
+                                                onLongClick = { selectedEvent = event })
+                                            .padding(vertical = 16.dp, horizontal = 8.dp)
+                                            .border(
+                                                BorderStroke(2.dp, color = periwinkle),
+                                                shape = RoundedCornerShape(16.dp)
+                                            ),
+                                    ) {
+                                        Column {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(
+                                                        start = 12.dp,
+                                                        end = 12.dp,
+                                                        top = 16.dp
+                                                    ),
+                                                horizontalArrangement = Arrangement.SpaceBetween
                                             )
-                                            Text(
-                                                text = event.amount.toString(), style = standardText,
+                                            {
+                                                Text(
+                                                    text = event.name,
+                                                    style = standardText,
+                                                )
+                                                Text(
+                                                    text = event.amount.toString(),
+                                                    style = standardText,
                                                     color = if (event.amount > 0) {
                                                         balanceGreen
                                                     } else {
                                                         balanceRed
                                                     }
                                                 )
-                                        }
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 6.dp, horizontal = 12.dp)
-                                        )
-                                        {
-                                            Text(
-                                                text = "Type: ${event.type}", style = standardText,
-                                                fontSize = 14.sp,
-                                                color = if (event.amount > 0) {
-                                                    balanceGreen
-                                                } else {
-                                                    balanceRed
-                                                }
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 6.dp, horizontal = 12.dp)
                                             )
+                                            {
+                                                Text(
+                                                    text = "Type: ${event.type}",
+                                                    style = standardText,
+                                                    fontSize = 14.sp,
+                                                    color = if (event.amount > 0) {
+                                                        balanceGreen
+                                                    } else {
+                                                        balanceRed
+                                                    }
+                                                )
 
+                                            }
                                         }
                                     }
                                 }
@@ -569,7 +613,9 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                         Text("Find date by amount", style = standardText)
                     }
                 }
-            }, modifier = Modifier.background(richBlack).fillMaxSize(1f)
+            }, modifier = Modifier
+                .background(richBlack)
+                .fillMaxSize(1f)
         ) { innerPadding ->
             BackHandler {
                 navController.navigate("main")

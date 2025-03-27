@@ -133,6 +133,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)//google viewmodel setup
 
     implementation(libs.gson)
+    implementation(libs.material.icons.extended)
 }
 kapt {
     correctErrorTypes = true

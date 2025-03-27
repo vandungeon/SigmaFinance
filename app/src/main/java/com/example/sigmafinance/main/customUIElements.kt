@@ -73,14 +73,22 @@ fun customButtonColors(): ButtonColors {
         disabledContentColor = Color.White.copy(alpha = 0.1f)
     )
 }
+//@Composable
+//fun GraphImage() {
+//    Image(
+//        painter = painterResource(id = R.drawable.graph1),
+//        contentDescription = "Graph icon",
+//        contentScale = ContentScale.Fit,
+//
+//    )
+//}
 @Composable
 fun GraphImage() {
     Image(
-        painter = painterResource(id = R.drawable.graph1),
+        painter = painterResource(id = R.drawable.Graph2),
         contentDescription = "Graph icon",
         contentScale = ContentScale.Fit,
-
-    )
+        )
 }
 
 @Composable
