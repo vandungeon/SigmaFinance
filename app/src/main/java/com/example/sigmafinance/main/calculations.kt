@@ -99,8 +99,6 @@ fun getOccurrencesForYearStatic(
         }
         .toList()
 }
-
-
 fun getOccurrencesForYearRecurring(
     events: List<DBType.FundsEventRecurring>,
     year: Int
@@ -165,4 +163,10 @@ fun getOccurrencesForYearRecurring(
             else -> emptyList()
         }
     }
+}
+
+fun analyticsGetIncomeAndExpenses() : List<Pair<Float, Float>> {
+    return listOf(
+        Pair(5f, 5f)
+    )
 }

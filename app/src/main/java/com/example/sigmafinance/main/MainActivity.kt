@@ -1,6 +1,7 @@
 package com.example.sigmafinance.main
 
 import android.annotation.SuppressLint
+import android.icu.text.Collator.getDisplayName
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -23,11 +24,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -38,10 +42,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.InsertChartOutlined
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
-import androidx.compose.material.icons.materialIcon
+import androidx.compose.material.icons.filled.LineAxis
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
@@ -52,10 +60,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,12 +81,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
+import com.example.sigmafinance.R
 import com.example.sigmafinance.database.DBType
 import com.example.sigmafinance.database.TemporaryLists
 import com.example.sigmafinance.navigation.NavigationComponent
@@ -88,16 +110,22 @@ import com.example.sigmafinance.ui.theme.balanceRed
 import com.example.sigmafinance.ui.theme.customText
 import com.example.sigmafinance.ui.theme.customTitle
 import com.example.sigmafinance.ui.theme.dialogHeader
+import com.example.sigmafinance.ui.theme.montserratFontFamily
 import com.example.sigmafinance.ui.theme.periwinkle
+import com.example.sigmafinance.ui.theme.projectionHighlight
 import com.example.sigmafinance.ui.theme.richBlack
 import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 import java.util.TreeMap
 
 class MainActivity : ComponentActivity() {
@@ -212,63 +240,61 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
     }
 
     Scaffold(
-        floatingActionButton = {
-            Column (verticalArrangement = Arrangement.spacedBy(8.dp) ){
-                ExtendedFloatingActionButton(modifier = Modifier.padding(PaddingValues(0.dp)) ,
-                    onClick = { navController.navigate("MoneyProjection/$currentAmountOfMoney") },
-                    content = {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp), contentAlignment = Alignment.Center
-                        ) {
-                            GraphImage()
-                        }
-                    },
-                    containerColor = accentGrey,
-                )
-                ExtendedFloatingActionButton(
-                    onClick = { toggleAddEventDialog = true },
-                    content = {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Add button",
-                            tint = Color.White
-                        )
-                    },
-                    containerColor = periwinkle
-                )
-            }
-        },
         bottomBar = {
-            Card(modifier = Modifier
+/*            Card(modifier = Modifier
                 .padding(horizontal = 16.dp)
-                .fillMaxWidth(1f)){
-                Row(horizontalArrangement = Arrangement.Absolute.SpaceBetween) {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = "Add event",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(
-                            Icons.Filled.DateRange,
-                            contentDescription = "Money projection",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = { }) {
-                        GraphImage()
-                    }
-                    IconButton(onClick = { /* Add your click logic here */ }) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardDoubleArrowRight,
-                            contentDescription = "Next Arrow"
-                        )
+                .fillMaxWidth(1f)
+                .height(60.dp)){*/
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 48.dp)
+                        .fillMaxWidth(1f)
+                        .height(80.dp)
+                        .paint(
+                            painter = painterResource(id = R.drawable.gradient1),
+                            contentScale = ContentScale.FillBounds
+                        ),
+
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.matchParentSize()) {
+                        IconButton(onClick = { toggleAddEventDialog = true }) {
+                            Icon(
+                                Icons.Filled.Add,
+                                contentDescription = "Add event",
+                                tint = Color.White,
+                                modifier = Modifier.scale(1.3f)
+                            )
+                        }
+                        IconButton(onClick = { navController.navigate("MoneyProjection/$currentAmountOfMoney")}) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardDoubleArrowRight,
+                                tint = Color.White,
+                                contentDescription = "Money projection",
+                                modifier = Modifier.scale(1.3f)
+                            )
+                        }
+                        IconButton(onClick = { }) {
+                            Icon(
+                                Icons.Filled.InsertChartOutlined,
+                                contentDescription = "Analytics",
+                                tint = Color.White,
+                                modifier = Modifier.scale(1.3f)
+                            )
+                        }
+                        IconButton(onClick = { }) {
+                            Icon(
+                                Icons.Filled.DateRange,
+                                contentDescription = "Budget",
+                                tint = Color.White,
+                                modifier = Modifier.scale(1.3f)
+                            )
+                        }
+
+
                     }
                 }
-            }
         }
     ) { innerPadding ->
         Box(
@@ -291,7 +317,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.Top
                 ) {
-                Text(text = "$currentAmountOfMoney UAH", fontSize = 22.sp, color = periwinkle)
+                Text(text = "$currentAmountOfMoney UAH", fontSize = 22.sp, color = periwinkle, style = customTitle)
             }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -302,20 +328,22 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                         Icon(
                             Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                             contentDescription = "Go to previous month",
-                            tint = Color.White
+                            tint = Color.White,
+                            modifier = Modifier.scale(1.5f)
                         )
                     }
                     Text(
                         text = "${currentDate.month} ${currentDate.year} ",
-                        fontWeight = FontWeight.Bold,
                         style = customText,
+                        fontFamily = montserratFontFamily,
                         color = Color.White
                     )
                     IconButton(onClick = { incrementDate() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = "Go to next month",
-                            tint = Color.White
+                            tint = Color.White,
+                            modifier = Modifier.scale(1.5f)
                         )
                     }
                 }
@@ -395,9 +423,8 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                             }
                         }
                     }
-
                 }
-                Column {
+                Column (modifier = Modifier.padding(vertical = 16.dp)){
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
@@ -416,13 +443,19 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Total: $selectedNetIncome",
-                                    style = standardText,
-                                    color = if (selectedNetIncome > 0) {
-                                        balanceGreen
-                                    } else {
-                                        balanceRed
-                                    }
+                                    text = buildAnnotatedString {
+                                        withStyle(style = SpanStyle(color = Color.White)) {
+                                            append("Total: ")
+                                        }
+                                        withStyle(
+                                            style = SpanStyle(
+                                                color = if (selectedNetIncome > 0) balanceGreen else balanceRed
+                                            )
+                                        ) {
+                                            append("$selectedNetIncome")
+                                        }
+                                    },
+                                    style = standardText
                                 )
                             }
                             HorizontalDivider(
@@ -435,68 +468,45 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                     if (selectedEventsLists.isNotEmpty()) {
                         Card (modifier = Modifier
                             .padding(horizontal = 16.dp)
-                            .fillMaxWidth(1f)){
-                            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            .fillMaxWidth(1f)
+                            .fillMaxHeight(0.9f),
+                            shape = RoundedCornerShape(16.dp
+                            )){
+                            LazyColumn(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)) {
                                 items(selectedEventsLists) { event ->
-                                    //Events for days display
-                                    Card(
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(periwinkle.copy(alpha = 0.4f)),
-                                        modifier = Modifier
-                                            .combinedClickable(onClick = {},
-                                                onLongClick = { selectedEvent = event })
-                                            .padding(vertical = 16.dp, horizontal = 8.dp)
-                                            .border(
-                                                BorderStroke(2.dp, color = periwinkle),
-                                                shape = RoundedCornerShape(16.dp)
-                                            ),
-                                    ) {
-                                        Column {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(
-                                                        start = 12.dp,
-                                                        end = 12.dp,
-                                                        top = 16.dp
-                                                    ),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            )
-                                            {
-                                                Text(
-                                                    text = event.name,
-                                                    style = standardText,
-                                                )
-                                                Text(
-                                                    text = event.amount.toString(),
-                                                    style = standardText,
-                                                    color = if (event.amount > 0) {
-                                                        balanceGreen
-                                                    } else {
-                                                        balanceRed
-                                                    }
-                                                )
-                                            }
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 6.dp, horizontal = 12.dp)
-                                            )
-                                            {
-                                                Text(
-                                                    text = "Type: ${event.type}",
-                                                    style = standardText,
-                                                    fontSize = 14.sp,
-                                                    color = if (event.amount > 0) {
-                                                        balanceGreen
-                                                    } else {
-                                                        balanceRed
-                                                    }
-                                                )
+                                   GradientItemBackground {
+                                       Row(
+                                           modifier = Modifier
+                                               .fillMaxWidth()
+                                               .height(32.dp)
+                                               .padding(
+                                                   start = 12.dp,
+                                                   end = 12.dp,
+                                               ),
+                                           horizontalArrangement = Arrangement.SpaceBetween,
+                                           verticalAlignment = Alignment.CenterVertically
+                                       )
+                                       {
+                                           Text(
+                                               text = event.name,
+                                               style = standardText,
+                                           )
+                                           Text(
+                                               text = "${event.type}",
+                                               style = standardText,
+                                               color = Color.White
+                                           )
+                                           Text(
+                                               text = event.amount.toString() + " UAH",
+                                               style = standardText,
+                                               color = Color.White
+                                           )
 
-                                            }
-                                        }
-                                    }
+                                       }
+
+                                   }
                                 }
                             }
                         }
@@ -589,28 +599,32 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
         Scaffold(
             containerColor = richBlack,
             topBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(1f)
-                        .padding(top = 40.dp)
-                        .padding(horizontal = 12.dp)
-                        .background(richBlack)
-                ) {
-                    Text("Money Projection", style = customTitle)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "Here you can find out when you will have certain sum of money, or how much you will have at certain date.",
-                        style = standardText, color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(onClick = { toggleAmountByDate = true }, colors = customButtonColors()) {
-                        Text("Find amount by date", style = standardText)
-                    }
-                    Button(
-                        onClick = { toggleDateByAmountDialog = true },
-                        colors = customButtonColors()
+                Box(modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF9F2BB1),
+                                Color(0xFFEBA4FF)
+                            )
+                        )
+                    ), contentAlignment = Alignment.CenterStart) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(1f)
+                            .padding(vertical = 19.dp)
+                            .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Absolute.SpaceAround
                     ) {
-                        Text("Find date by amount", style = standardText)
+                        Text("Money Projection", style = customTitle, color = Color.White, modifier = Modifier.fillMaxWidth(0.9f))
+                        IconButton(onClick = { navController.navigate("main")}) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                tint = Color.White,
+                                contentDescription = "Money projection",
+                                modifier = Modifier.scale(1.3f)
+                            )
+                        }
                     }
                 }
             }, modifier = Modifier
@@ -623,157 +637,440 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
             Box(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .padding(horizontal = 12.dp)
                     .fillMaxSize(1f)
-                    .background(richBlack), contentAlignment = Alignment.Center
+                    .background(richBlack), contentAlignment = Alignment.TopCenter
             ) {
-                Column(Modifier.padding(top = 0.dp)) {
-                    foundAmount.let { amount ->
-                        if (amount != 0f) {
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .fillMaxWidth(1f)
-                                    .padding(vertical = 6.dp)
-                            )
+                Column(Modifier.padding(top = 17.dp)) {
+                    GreyScaleCard {
+                        Column {
                             Text(
-                                text = "By the date of $selectedDate, you will have $foundAmount UAH",
-                                style = customTitle,
-                                fontSize = 32.sp,
-                                lineHeight = 48.sp
+                                "Here you can find out when you will have certain sum of money, or how much you will have at certain date.",
+                                style = standardText, color = Color.White, fontSize = 14.sp
                             )
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .fillMaxWidth(1f)
-                                    .padding(vertical = 6.dp)
-                            )
-                        }
-                    }
-                    foundDate?.let { date ->
-                        if (date >= LocalDate.now()) {
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .fillMaxWidth(1f)
-                                    .padding(vertical = 6.dp)
-                            )
-                            Text(
-                                text = "$selectedAmount UAH you searched will most likely happen around $foundDate",
-                                style = customTitle,
-                                fontSize = 32.sp,
-                                lineHeight = 48.sp
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .fillMaxWidth(1f)
-                                    .padding(vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
-                if (toggleAmountByDate) {
-                    val datePickerState = rememberDatePickerState()
-                    DatePickerDialog(
-                        onDismissRequest = { toggleAmountByDate = false },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                val millis = datePickerState.selectedDateMillis
-                                if (millis != null) {
-                                    selectedDate = Instant.ofEpochMilli(millis)
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                }
-                                if (selectedDate!! >= LocalDate.now()) {
-                                    val result = viewModel.moneyProjection(
-                                        baseAmount = baseAmount,
-                                        targetAmount = 0f,
-                                        goalDate = selectedDate,
-                                        startDate = LocalDate.now()
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth(1f)){
+                                Button(onClick = { toggleAmountByDate = true },
+                                    colors = customButtonColors(),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .height(37.dp),
+                                    elevation = ButtonDefaults.buttonElevation(
+                                        defaultElevation = 8.dp,
+                                        pressedElevation = 12.dp,
+                                        disabledElevation = 0.dp
                                     )
-                                    val (floatValue, _) = result
-                                    if (floatValue != null) {
-                                        foundAmount = floatValue
-                                        foundDate = null
-                                        toggleAmountByDate = false
-                                    }
-                                }
-                            }) {
-                                Text("Ok")
-                            }
-                        }
-                    ) {
-                        DatePicker(state = datePickerState)
-                    }
-                }
-                if (toggleDateByAmountDialog) {
-                    var temporaryValue by remember { mutableStateOf("") }
-                    fun validateInput(amount: String): Boolean {
-                        return amount.toFloatOrNull() != null
-                    }
-                    Dialog(onDismissRequest = {
-                        toggleDateByAmountDialog = !toggleDateByAmountDialog
-                    }) {
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = richBlack
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    "Enter amount of money to search for",
-                                    color = Purple40,
-                                    style = dialogHeader
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                CustomTextField(
-                                    value = temporaryValue,
-                                    onValueChange = { temporaryValue = it },
-                                    label = "Desired amount of money",
-                                    modifier = Modifier.fillMaxWidth(1f)
-                                )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Button(onClick = {
-                                        toggleDateByAmountDialog = !toggleDateByAmountDialog
-                                    }, colors = customButtonColors()) {
-                                        Text("Cancel")
-                                    }
-                                    Button(
-                                        onClick = {
-                                            selectedAmount = temporaryValue.toFloat()
-                                            val result = viewModel.moneyProjection(
-                                                baseAmount = baseAmount,
-                                                targetAmount = selectedAmount,
-                                                goalDate = null,
-                                                startDate = LocalDate.now()
-                                            )
-                                            Log.d(
-                                                "Money Projection",
-                                                "Selected amount is $selectedAmount"
-                                            )
-                                            val (_, dateValue) = result
-                                            if (dateValue != null) {
-                                                Log.d(
-                                                    "Money Projection",
-                                                    "Date value is $dateValue"
-                                                )
-                                                foundAmount = 0f
-                                                foundDate = dateValue
-                                            }
-                                            toggleDateByAmountDialog = !toggleDateByAmountDialog
-                                        },
-                                        colors = customButtonColors(),
-                                        enabled = validateInput(temporaryValue)
                                     ) {
-                                        Text("Confirm")
-                                    }
+                                Text("Amount by date", style = standardText, fontSize = 12.sp)
+                            }
+                                Button(
+                                    onClick = { toggleDateByAmountDialog = true },
+                                    colors = customButtonColors(),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .height(37.dp)
+                                ) {
+                                    Text("Date by amount", style = standardText, fontSize = 12.sp)
                                 }
                             }
 
                         }
                     }
+
+                    foundAmount.let { amount ->
+                        if (amount != 0f) {
+                                Column(modifier = Modifier
+                                    .padding(start = 0.dp)) {
+                                    Text(text = "Projection:", style = customTitle, color = Color.White,
+                                        modifier = Modifier
+                                            .padding(start = 11.dp)
+                                            .padding(vertical = 9.dp), fontWeight = FontWeight.Light)
+                                    GreyScaleCard() {
+                                        Column() {
+                                            Text(
+                                                text = "You searched for how much you will have around",
+                                                style = customText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                            Text(
+                                                text = selectedDate?.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) ?: "No date selected",
+                                                style = projectionHighlight
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    GreyScaleCard() {
+                                        Column() {
+                                            Text(
+                                                text = "Which means, in ${
+                                                    viewModel.currentDate.value.until(
+                                                        selectedDate,
+                                                        ChronoUnit.DAYS
+                                                    )
+                                                } days, you will have",
+                                                style = customText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                            Text(
+                                                text = "$amount UAH",
+                                                style = projectionHighlight
+                                            )
+                                        }
+                                    }
+                                }
+                        }
+                        foundDate?.let { date ->
+                            if (date >= LocalDate.now()) {
+                                Column {
+                                    Text(
+                                        text = "Projection:",
+                                        style = customTitle,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .padding(start = 11.dp)
+                                            .padding(vertical = 9.dp),
+                                        fontWeight = FontWeight.Light
+                                    )
+                                    GreyScaleCard() {
+                                        Column() {
+                                            Text(
+                                                text = "You searched for",
+                                                style = customText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                            Text(
+                                                text = date.toString(),
+                                                style = projectionHighlight
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    GreyScaleCard() {
+                                        Column() {
+                                            Text(
+                                                text = "It will most likely happen around",
+                                                style = customText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                            Text(
+                                                text = date.toString(),
+                                                style = projectionHighlight
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    GreyScaleCard() {
+                                        Column() {
+                                            Text(
+                                                text = "Which is...",
+                                                style = customText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                            Text(
+                                                text = buildAnnotatedString {
+                                                    withStyle(style = SpanStyle(color = periwinkle)) {
+                                                        append(
+                                                            "${
+                                                                viewModel.currentDate.value.until(
+                                                                    date,
+                                                                    ChronoUnit.DAYS
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    withStyle(style = SpanStyle(color = Color.White)) {
+                                                        append(" days\n or ")
+                                                    }
+                                                    withStyle(style = SpanStyle(color = periwinkle)) {
+                                                        append(
+                                                            "${
+                                                                viewModel.currentDate.value.until(
+                                                                    date,
+                                                                    ChronoUnit.WEEKS
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    withStyle(style = SpanStyle(color = Color.White)) {
+                                                        append(" weeks\n or ")
+                                                    }
+                                                    withStyle(style = SpanStyle(color = periwinkle)) {
+                                                        append(
+                                                            "${
+                                                                viewModel.currentDate.value.until(
+                                                                    date,
+                                                                    ChronoUnit.MONTHS
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    withStyle(style = SpanStyle(color = Color.White)) {
+                                                        append(" months\n or ")
+                                                    }
+                                                    withStyle(style = SpanStyle(color = periwinkle)) {
+                                                        append(
+                                                            "${
+                                                                viewModel.currentDate.value.until(
+                                                                    date,
+                                                                    ChronoUnit.YEARS
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    withStyle(style = SpanStyle(color = Color.White)) {
+                                                        append(" years\n ...away from now")
+                                                    }
+                                                },
+                                                style = standardText,
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (toggleAmountByDate) {
+                        val datePickerState = rememberDatePickerState()
+                        DatePickerDialog(
+                            onDismissRequest = { toggleAmountByDate = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val millis = datePickerState.selectedDateMillis
+                                    if (millis != null) {
+                                        selectedDate = Instant.ofEpochMilli(millis)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+                                    }
+                                    if (selectedDate!! >= LocalDate.now()) {
+                                        val result = viewModel.moneyProjection(
+                                            baseAmount = baseAmount,
+                                            targetAmount = 0f,
+                                            goalDate = selectedDate,
+                                            startDate = LocalDate.now()
+                                        )
+                                        val (floatValue, _) = result
+                                        if (floatValue != null) {
+                                            foundAmount = floatValue
+                                            foundDate = null
+                                            toggleAmountByDate = false
+                                        }
+                                    }
+                                }) {
+                                    Text("Ok")
+                                }
+                            }
+                        ) {
+                            DatePicker(state = datePickerState)
+                        }
+                    }
+                    if (toggleDateByAmountDialog) {
+                        var temporaryValue by remember { mutableStateOf("") }
+                        fun validateInput(amount: String): Boolean {
+                            return amount.toFloatOrNull() != null
+                        }
+                        Dialog(onDismissRequest = {
+                            toggleDateByAmountDialog = !toggleDateByAmountDialog
+                        }) {
+                            Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = richBlack
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        "Enter amount of money to search for",
+                                        color = Purple40,
+                                        style = dialogHeader
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    CustomTextField(
+                                        value = temporaryValue,
+                                        onValueChange = { temporaryValue = it },
+                                        label = "Desired amount of money",
+                                        modifier = Modifier.fillMaxWidth(1f)
+                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(onClick = {
+                                            toggleDateByAmountDialog = !toggleDateByAmountDialog
+                                        }, colors = customButtonColors()) {
+                                            Text("Cancel")
+                                        }
+                                        Button(
+                                            onClick = {
+                                                selectedAmount = temporaryValue.toFloat()
+                                                val result = viewModel.moneyProjection(
+                                                    baseAmount = baseAmount,
+                                                    targetAmount = selectedAmount,
+                                                    goalDate = null,
+                                                    startDate = LocalDate.now()
+                                                )
+                                                Log.d(
+                                                    "Money Projection",
+                                                    "Selected amount is $selectedAmount"
+                                                )
+                                                val (_, dateValue) = result
+                                                if (dateValue != null) {
+                                                    Log.d(
+                                                        "Money Projection",
+                                                        "Date value is $dateValue"
+                                                    )
+                                                    foundAmount = 0f
+                                                    foundDate = dateValue
+                                                }
+                                                toggleDateByAmountDialog = !toggleDateByAmountDialog
+                                            },
+                                            colors = customButtonColors(),
+                                            enabled = validateInput(temporaryValue)
+                                        ) {
+                                            Text("Confirm")
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                    }
                 }
             }
         }
+}
+
+@Composable
+fun AnalyticsScren(navController: NavHostController, viewModel: ViewModel){
+    var selectedPeriod by remember {
+        mutableStateOf("Months")
+    }
+    var currentDate by remember { viewModel.currentDate }
+    fun decrementDate() {
+        currentDate = currentDate.minusMonths(1)
+    }
+    fun incrementDate() {
+        currentDate = currentDate.plusMonths(1)
+    }
+    LaunchedEffect (currentDate) {
+
+    }
+    Scaffold(containerColor = colorScheme.primaryContainer,
+        topBar = {
+            Box(modifier = Modifier
+                .fillMaxWidth(1f)
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF9F2BB1),
+                            Color(0xFFEBA4FF)
+                        )
+                    )
+                ), contentAlignment = Alignment.CenterStart) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(1f)
+                        .padding(vertical = 19.dp)
+                        .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Absolute.SpaceAround
+                ) {
+                    Text("Money Projection", style = customTitle, color = Color.White, modifier = Modifier.fillMaxWidth(0.9f))
+                    IconButton(onClick = { navController.navigate("main")}) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            tint = Color.White,
+                            contentDescription = "Analytics",
+                            modifier = Modifier.scale(1.3f)
+                        )
+                    }
+                }
+            }
+        }, modifier = Modifier
+            .background(colorScheme.primaryContainer,)
+            .fillMaxSize(1f)
+        ) { innerPadding ->
+        BackHandler {
+            navController.navigate("main")
+        }
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(1f)
+                .background(colorScheme.primaryContainer,), contentAlignment = Alignment.TopCenter
+        ) {
+            Column(Modifier.padding(top = 17.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Months",
+                            style = customText,
+                            fontFamily = montserratFontFamily,
+                            color = if (selectedPeriod == "Months") {
+                                periwinkle} else {Color.White},
+                            modifier = Modifier.clickable { selectedPeriod = "Months"}
+                        )
+                        VerticalDivider(thickness = 2.dp)
+                        Text(
+                            text = "Years",
+                            style = customText,
+                            fontFamily = montserratFontFamily,
+                            color = if (selectedPeriod == "Years") {
+                                periwinkle} else {Color.White},
+                            modifier = Modifier.clickable {  selectedPeriod = "Years"}
+                        )
+                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { decrementDate() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Go to previous month",
+                            tint = Color.White,
+                            modifier = Modifier.scale(1.5f)
+                        )
+                    }
+                    Text(
+                        text = "${currentDate.month} ${currentDate.year} ",
+                        style = customText,
+                        fontFamily = montserratFontFamily,
+                        color = Color.White
+                    )
+                    IconButton(onClick = { incrementDate() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Go to next month",
+                            tint = Color.White,
+                            modifier = Modifier.scale(1.5f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                  /*  items() { day ->
+                    }*/
+                }
+                }
+
+            }
+
+    }
 }

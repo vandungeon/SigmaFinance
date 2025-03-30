@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 private val DarkColorScheme = darkColorScheme(
     primary = richBlack,
     secondary = paynesGray,
-    tertiary = airSuperiorityBlue,
+    tertiary = periwinkle,
     primaryContainer = richBlack,
     surfaceContainer = richBlack,
     background = richBlack,
@@ -52,7 +52,7 @@ fun SigmaFinanceTheme(
         }
 
         darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else -> DarkColorScheme
     }
 
     MaterialTheme(

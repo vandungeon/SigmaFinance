@@ -1,5 +1,6 @@
 [versions]
-compose-material-icons-extended = "1.6.0"
+comGoogleDaggerHiltAndroid = "2.51.1"
+compose-material-icons-extended = "1.7.8"
 accompanistNavigationAnimationVersion = "0.36.0"
 activityComposeVersion = "1.9.2"
 agp = "8.5.2"
@@ -17,6 +18,7 @@ googleHiltAndroidVersion = "2.52"
 gson = "2.11.0"
 gsonVersion = "2.10.1"
 hiltAndroid = "2.52"
+hiltAndroidCompilerVersion = "2.51.1"
 hiltAndroidVersion = "2.52"
 hiltAndroidCompiler = "2.52"
 hiltCompiler = "1.2.0"
@@ -55,6 +57,9 @@ constraintlayoutCore = "1.0.4"
 graphicsShapesAndroidVersion = "1.0.1"
 
 [libraries]
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltCompiler" }
+hilt-android-compiler-v2511 = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompilerVersion" }
+hilt-android-v2511 = { module = "com.google.dagger:hilt-android", version.ref = "comGoogleDaggerHiltAndroid" }
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-material-icons-extended" }
 
 androidx-activity-compose-v190 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }

@@ -2,18 +2,24 @@ package com.example.sigmafinance.main
 
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -34,14 +40,25 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextDirection.Companion.Content
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.sigmafinance.R
 import com.example.sigmafinance.database.TemporaryLists
 import com.example.sigmafinance.ui.theme.Purple40
+import com.example.sigmafinance.ui.theme.balanceGreen
+import com.example.sigmafinance.ui.theme.balanceRed
+import com.example.sigmafinance.ui.theme.customText
+import com.example.sigmafinance.ui.theme.customTitle
 import com.example.sigmafinance.ui.theme.dialogHeader
 import com.example.sigmafinance.ui.theme.jordyBlue
 import com.example.sigmafinance.ui.theme.montserratFontFamily
@@ -67,7 +84,7 @@ fun customTextFieldColors(): TextFieldColors {
 @Composable
 fun customButtonColors(): ButtonColors {
     return ButtonDefaults.buttonColors(
-        containerColor = Purple40,
+        containerColor = periwinkle,
         contentColor = Color.White,
         disabledContainerColor = Color.Gray.copy(alpha = 0.2f),
         disabledContentColor = Color.White.copy(alpha = 0.1f)
@@ -85,12 +102,114 @@ fun customButtonColors(): ButtonColors {
 @Composable
 fun GraphImage() {
     Image(
-        painter = painterResource(id = R.drawable.Graph2),
+        painter = painterResource(id = R.drawable.graph2),
         contentDescription = "Graph icon",
         contentScale = ContentScale.Fit,
+        modifier = Modifier.fillMaxSize(0.7f).scale(1.5f)
         )
 }
-
+/*@Composable
+fun CustomButton(modifier: Modifier = Modifier,
+                 content: @Composable () -> Unit, onClick: () -> Unit){
+    Button(
+        onClick = onClick,
+        modifier = Modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFBA57D5)
+        ),
+*//*        shape = RoundedCornerShape(8.dp),*//*
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF9F2BB1),
+                            Color(0xFFEBA4FF)
+                        )
+                    )
+                )
+               .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            content()
+        }
+    }
+}*/
+@Composable
+fun GradientItemBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF9F2BB1),
+                        Color.Transparent
+                    )
+                )
+            )
+            .drawBehind {
+                val strokeWidth = 2.dp.toPx()
+                drawLine(
+                    color = Color.White,
+                    start = Offset(0f, 0f),
+                    end = Offset(0f, size.height),
+                    strokeWidth = strokeWidth
+                )
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        content()
+    }
+}
+@Composable
+fun GreyScaleCard(modifier: Modifier = Modifier,
+                  content: @Composable () -> Unit){
+    Card (modifier = Modifier
+        .fillMaxWidth(1f).padding(horizontal = 11.dp),
+        shape = RoundedCornerShape(30.dp)
+    ) {
+        Box(modifier = modifier.padding(horizontal = 23.dp).padding(vertical = 15.dp)){
+            content()
+        }
+    }
+}
+@Composable
+fun AnalyticsGraph(income: Float, expenses: Float){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp), // Optional padding around the Row
+        horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between rectangles
+    ) {
+        val columnHeight = 100f
+        var leftColumnHeight = columnHeight
+        var rightColumnHeight = columnHeight
+        if (income > expenses){
+             rightColumnHeight = (expenses / income) * (columnHeight / 100)
+        }
+        else {
+            leftColumnHeight = (income / expenses) * (columnHeight / 100)
+        }
+        //Income
+        Box(
+            modifier = Modifier
+                .width(100.dp) // Same width
+                .height((leftColumnHeight).dp) // Different height
+                .background(balanceGreen) // First color
+        )
+        //Expenses
+        Box(
+            modifier = Modifier
+                .width(100.dp) // Same width
+                .height((rightColumnHeight).dp) // Different height
+                .background(balanceRed) // Second color
+        )
+    }
+}
 @Composable
 fun CustomTextField(
     value: String,

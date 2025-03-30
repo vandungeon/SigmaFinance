@@ -1,6 +1,7 @@
 package com.example.sigmafinance.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -62,10 +63,19 @@ val Typography = Typography(
 val customTitle = TextStyle(
     color = periwinkle,
     fontFamily = montserratFontFamily,
-    fontWeight = FontWeight.Bold,
+    fontWeight = FontWeight.SemiBold,
     fontSize = 24.sp,
     lineHeight = 28.sp,
     letterSpacing = 0.sp
+)
+val projectionHighlight = TextStyle(
+    color = periwinkle,
+    fontFamily = montserratFontFamily,
+    fontWeight = FontWeight.Normal,
+    fontSize = 32.sp,
+    lineHeight = 48.sp,
+    letterSpacing = 0.sp
+
 )
 val dialogHeader = TextStyle(
     fontFamily = montserratFontFamily,
@@ -76,8 +86,8 @@ val dialogHeader = TextStyle(
     letterSpacing = 0.5.sp
 )
 val customText = TextStyle(
-    fontFamily = interFontFamily,
-    color = jordyBlue,
+    fontFamily = montserratFontFamily,
+    color = Color.White,
     fontWeight = FontWeight.Medium,
     fontSize = 16.sp,
     lineHeight = 16.sp,
