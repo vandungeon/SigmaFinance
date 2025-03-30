@@ -68,7 +68,12 @@ import com.example.sigmafinance.viewmodel.ViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+enum class MonthName {
+    JANUARY, FEBRUARY, MARCH, APRIL, MAY, JUNE,
+    JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER;
 
+    fun displayName(): String = name.lowercase().replaceFirstChar { it.uppercase() }
+}
 @Composable
 fun customTextFieldColors(): TextFieldColors {
     return TextFieldDefaults.colors(
@@ -105,7 +110,9 @@ fun GraphImage() {
         painter = painterResource(id = R.drawable.graph2),
         contentDescription = "Graph icon",
         contentScale = ContentScale.Fit,
-        modifier = Modifier.fillMaxSize(0.7f).scale(1.5f)
+        modifier = Modifier
+            .fillMaxSize(0.7f)
+            .scale(1.5f)
         )
 }
 /*@Composable
@@ -169,16 +176,20 @@ fun GradientItemBackground(
 fun GreyScaleCard(modifier: Modifier = Modifier,
                   content: @Composable () -> Unit){
     Card (modifier = Modifier
-        .fillMaxWidth(1f).padding(horizontal = 11.dp),
+        .fillMaxWidth(1f)
+        .padding(horizontal = 11.dp),
         shape = RoundedCornerShape(30.dp)
     ) {
-        Box(modifier = modifier.padding(horizontal = 23.dp).padding(vertical = 15.dp)){
+        Box(modifier = modifier
+            .padding(horizontal = 23.dp)
+            .padding(vertical = 15.dp)){
             content()
         }
     }
 }
 @Composable
 fun AnalyticsGraph(income: Float, expenses: Float){
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,11 +199,11 @@ fun AnalyticsGraph(income: Float, expenses: Float){
         val columnHeight = 100f
         var leftColumnHeight = columnHeight
         var rightColumnHeight = columnHeight
-        if (income > expenses){
-             rightColumnHeight = (expenses / income) * (columnHeight / 100)
-        }
+        if (income == 0f){ leftColumnHeight = 0f }
+        else if (expenses == 0f) { rightColumnHeight = 0f }
         else {
-            leftColumnHeight = (income / expenses) * (columnHeight / 100)
+            if (income > expenses){ rightColumnHeight = (expenses / income) * (columnHeight / 100) }
+            else { leftColumnHeight = (income / expenses) * (columnHeight / 100) }
         }
         //Income
         Box(
@@ -209,6 +220,77 @@ fun AnalyticsGraph(income: Float, expenses: Float){
                 .background(balanceRed) // Second color
         )
     }
+}
+
+@Composable
+fun AnalyticsGraphYearly(monthlyData: List<Pair<Float, Float>>) {
+    val totalIncome = monthlyData.sumOf { it.first.toDouble() }.toFloat()
+    val totalExpenses = monthlyData.sumOf { it.second.toDouble() }.toFloat()
+    val monthlyResultsIncome = Array(12) { 0f }.toMutableList()
+    val monthlyResultsExpenses = Array(12) { 0f }.toMutableList()
+
+    monthlyData.forEachIndexed{ index, (income, expenses)  ->
+        monthlyResultsIncome[index] = income
+        monthlyResultsExpenses[index] = expenses
+    }
+    val incomeColors = listOf(
+        Color(0xFF4CAF50), Color(0xFF66BB6A), Color(0xFF81C784), Color(0xFF9CCC65),
+        Color(0xFFB2FF59), Color(0xFFC6FF00), Color(0xFFEEFF41), Color(0xFFFFF176),
+        Color(0xFFFFF9C4), Color(0xFFE6EE9C), Color(0xFFDCE775), Color(0xFFD4E157)
+    )
+    val expenseColors = listOf(
+        Color(0xFFF44336), Color(0xFFE57373), Color(0xFFEF9A9A), Color(0xFFFF8A80),
+        Color(0xFFFF5252), Color(0xFFFF1744), Color(0xFFD81B60), Color(0xFFC2185B),
+        Color(0xFFAD1457), Color(0xFFF06292), Color(0xFFF48FB1), Color(0xFFF8BBD0)
+    )
+    Column () {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            monthlyResultsIncome.forEachIndexed { index, item ->
+                val incomePercent = if (totalIncome > 0f) (item / totalIncome) else 0f
+                Box(
+                    modifier = Modifier
+                        .weight(incomePercent) // Width proportional to total
+                        .fillMaxHeight()
+                        .background(expenseColors[index])
+                ){
+                    Column {
+                        Text(text = item.toString())
+                        Text(text = {MonthName.entries[index].displayName().substring(0, 3)}.toString())
+                    }
+
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp) // Fixed height for all boxes
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            monthlyResultsExpenses.forEachIndexed { index, item ->
+                val expensePercent = if (totalExpenses > 0f) (item / totalExpenses) else 0f
+                Box(
+                    modifier = Modifier
+                        .weight(expensePercent)
+                        .fillMaxHeight()
+                        .background(expenseColors[index])
+                ){
+                    Column {
+                        Text(text = item.toString())
+                        Text(text = {MonthName.entries[index].displayName().substring(0, 3)}.toString())
+                    }
+                }
+            }
+        }
+    }
+
 }
 @Composable
 fun CustomTextField(

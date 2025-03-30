@@ -948,19 +948,40 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
 }
 
 @Composable
-fun AnalyticsScren(navController: NavHostController, viewModel: ViewModel){
-    var selectedPeriod by remember {
-        mutableStateOf("Months")
-    }
+fun AnalyticsScreen(navController: NavHostController, viewModel: ViewModel){
+    var selectedPeriod by remember { mutableStateOf("Months") }
+    val currentYearEvents by viewModel.currentYearEvents.observeAsState(emptyList())
+    var newDate by remember { mutableStateOf(LocalDate.now()) }
     var currentDate by remember { viewModel.currentDate }
+    var updateYearListsTrigger by remember { mutableLongStateOf(0L) }
+    var updateYearListsKey by remember { mutableIntStateOf(0) }
+    var monthlyTotals: List<Pair<Float, Float>> = emptyList()
     fun decrementDate() {
-        currentDate = currentDate.minusMonths(1)
+        newDate = currentDate.minusMonths(1)
+        if (newDate.year < currentDate.year) {
+            Log.d("DecrementDate", "DecrementDate caused update yearly lists")
+            updateYearListsKey = 1
+            updateYearListsTrigger = System.currentTimeMillis()
+        }
+        currentDate = newDate
     }
-    fun incrementDate() {
-        currentDate = currentDate.plusMonths(1)
-    }
-    LaunchedEffect (currentDate) {
 
+    fun incrementDate() {
+        newDate = currentDate.plusMonths(1)
+        if (newDate.year > currentDate.year) {
+            Log.d("incrementDate", "incrementDate caused update yearly lists")
+            updateYearListsKey = 2
+            updateYearListsTrigger = System.currentTimeMillis()
+
+        }
+        currentDate = newDate
+    }
+    LaunchedEffect(updateYearListsTrigger) {
+        Log.d("Main Activity", "updateYearListsTrigger triggered, newDate is $newDate")
+        viewModel.updateYearlyLists(updateYearListsKey, newDate)
+    }
+    LaunchedEffect (Unit, currentDate) {
+        monthlyTotals =  viewModel.analyticsGetIncomeAndExpenses(currentYearEvents)
     }
     Scaffold(containerColor = colorScheme.primaryContainer,
         topBar = {
@@ -1006,29 +1027,35 @@ fun AnalyticsScren(navController: NavHostController, viewModel: ViewModel){
                 .background(colorScheme.primaryContainer,), contentAlignment = Alignment.TopCenter
         ) {
             Column(Modifier.padding(top = 17.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Months",
-                            style = customText,
-                            fontFamily = montserratFontFamily,
-                            color = if (selectedPeriod == "Months") {
-                                periwinkle} else {Color.White},
-                            modifier = Modifier.clickable { selectedPeriod = "Months"}
-                        )
-                        VerticalDivider(thickness = 2.dp)
-                        Text(
-                            text = "Years",
-                            style = customText,
-                            fontFamily = montserratFontFamily,
-                            color = if (selectedPeriod == "Years") {
-                                periwinkle} else {Color.White},
-                            modifier = Modifier.clickable {  selectedPeriod = "Years"}
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Months",
+                        style = customText,
+                        fontFamily = montserratFontFamily,
+                        color = if (selectedPeriod == "Months") {
+                            periwinkle
+                        } else {
+                            Color.White
+                        },
+                        modifier = Modifier.clickable { selectedPeriod = "Months" }
+                    )
+                    VerticalDivider(thickness = 2.dp)
+                    Text(
+                        text = "Years",
+                        style = customText,
+                        fontFamily = montserratFontFamily,
+                        color = if (selectedPeriod == "Years") {
+                            periwinkle
+                        } else {
+                            Color.White
+                        },
+                        modifier = Modifier.clickable { selectedPeriod = "Years" }
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround,
@@ -1058,19 +1085,23 @@ fun AnalyticsScren(navController: NavHostController, viewModel: ViewModel){
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(4.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                  /*  items() { day ->
-                    }*/
+                if (selectedPeriod == "monthly") {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4),
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        items(monthlyTotals) { pair ->
+                            AnalyticsGraph(pair.first, pair.second)
+                        }
+                    }
                 }
+                else {
+                    AnalyticsGraphYearly(monthlyData = monthlyTotals)
                 }
-
             }
-
+        }
     }
 }

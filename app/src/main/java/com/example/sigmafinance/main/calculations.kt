@@ -3,6 +3,10 @@ package com.example.sigmafinance.main
 import android.util.Log
 import com.example.sigmafinance.database.DBType
 import com.example.sigmafinance.database.TemporaryLists
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import java.time.YearMonth
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -165,8 +169,3 @@ fun getOccurrencesForYearRecurring(
     }
 }
 
-fun analyticsGetIncomeAndExpenses() : List<Pair<Float, Float>> {
-    return listOf(
-        Pair(5f, 5f)
-    )
-}

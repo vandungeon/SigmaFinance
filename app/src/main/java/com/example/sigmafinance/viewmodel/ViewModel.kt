@@ -26,8 +26,10 @@ import com.example.sigmafinance.main.getOccurrencesForYearRecurring
 import com.example.sigmafinance.main.getOccurrencesForYearStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
@@ -428,5 +430,21 @@ class ViewModel @Inject constructor(
             }
             return Pair(null, null)
         }
+    }
+    suspend fun analyticsGetIncomeAndExpenses(yearWorthOfEvents: List<TemporaryLists.DemonstrationEvent>): List<Pair<Float, Float>> {
+        val monthlyResults = Array(12) { 0f to 0f }.toMutableList()
+        withContext(Dispatchers.Default) {
+            val (incomes, expenses) = yearWorthOfEvents.partition { it.amount > 0f }
+            val incomeByMonth = incomes.groupBy { it.date.monthValue - 1 }
+            val expenseByMonth = expenses.groupBy { it.date.monthValue - 1 }
+            (0..11).map { month ->
+                async {
+                    val income = incomeByMonth[month]?.sumOf { it.amount.toDouble() }?.toFloat() ?: 0f
+                    val expense = expenseByMonth[month]?.sumOf { (-it.amount).toDouble() }?.toFloat() ?: 0f
+                    month to (income to expense)
+                }
+            }.awaitAll().forEach { (month, pair) -> monthlyResults[month] = pair }
+        }
+        return monthlyResults
     }
 }
