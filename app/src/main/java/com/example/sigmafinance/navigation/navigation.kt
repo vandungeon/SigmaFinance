@@ -11,6 +11,8 @@ import androidx.navigation.compose.composable
 
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.sigmafinance.main.AnalyticsScreen
+import com.example.sigmafinance.main.BudgetScreen
 import com.example.sigmafinance.main.MainScreen
 import com.example.sigmafinance.main.ProjectionScreen
 import com.example.sigmafinance.ui.theme.richBlack
@@ -21,7 +23,7 @@ fun NavigationComponent(viewModel: ViewModel){
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "main", modifier = Modifier.background(
         richBlack)){
-        composable("main", enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right) }){ MainScreen(navController, viewModel) }
+        composable("main", enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) }, exitTransition = {slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)}){ MainScreen(navController, viewModel) }
         composable(
             route = "MoneyProjection/{baseAmount}",
             arguments = listOf(
@@ -33,5 +35,7 @@ fun NavigationComponent(viewModel: ViewModel){
             val baseAmount = backStackEntry.arguments?.getFloat("baseAmount")
             ProjectionScreen(viewModel = viewModel, navController = navController, baseAmount = baseAmount?: 0f)
         }
+        composable("Analytics", enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) }, exitTransition = {slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)}){ AnalyticsScreen(navController, viewModel) }
+        composable("Budget", enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) }, exitTransition = {slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)}){ BudgetScreen(navController, viewModel) }
     }
 }

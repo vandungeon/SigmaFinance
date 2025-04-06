@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sigmafinance.R
 
@@ -61,7 +62,7 @@ val Typography = Typography(
 )
 
 val customTitle = TextStyle(
-    color = periwinkle,
+    color = Color(0xFFBA57D5),
     fontFamily = montserratFontFamily,
     fontWeight = FontWeight.SemiBold,
     fontSize = 24.sp,
@@ -98,5 +99,13 @@ val standardText =  TextStyle(
     fontFamily = montserratFontFamily,
     fontWeight = FontWeight.Normal,
     fontStyle = FontStyle.Normal,
-    fontSize = 18.sp
+    fontSize = 18.sp,
+    color = Color.White
+)
+val smallText =  TextStyle(
+    fontFamily = montserratFontFamily,
+    fontWeight = FontWeight.Normal,
+    fontStyle = FontStyle.Normal,
+    fontSize = 8.sp,
+    lineHeight = 4.sp
 )

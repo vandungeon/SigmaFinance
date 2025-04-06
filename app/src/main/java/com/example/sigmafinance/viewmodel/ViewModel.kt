@@ -131,6 +131,20 @@ class ViewModel @Inject constructor(
             preferences[moneyValueKey] ?: 0.0f
         }
     }
+    //
+    private val budgetValueKey = floatPreferencesKey("budgetValue_Key")
+
+    suspend fun saveBudgetValue(value: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[budgetValueKey] = value
+        }
+    }
+
+    fun getBudgetValue(): Flow<Float> {
+        return context.dataStore.data.map { preferences ->
+            preferences[budgetValueKey] ?: 0.0f
+        }
+    }
 
     private val lastLoginDateKey = stringPreferencesKey("last_login_date")
 
@@ -153,8 +167,9 @@ class ViewModel @Inject constructor(
     private var _currentYearEvents = MutableLiveData<List<TemporaryLists.DemonstrationEvent>>()
     var currentYearEvents: LiveData<List<TemporaryLists.DemonstrationEvent>> = _currentYearEvents
     private var _nextYearEvents = MutableLiveData<List<TemporaryLists.DemonstrationEvent>>()
-
-    suspend fun updateYearlyLists(direction: Int, newDate: LocalDate) {
+    private var _currentBudgetMonthEvents = MutableLiveData<List<TemporaryLists.DemonstrationEvent>>()
+    var currentBudgetMonthEvents: LiveData<List<TemporaryLists.DemonstrationEvent>> = _currentBudgetMonthEvents
+     fun updateYearlyLists(direction: Int, newDate: LocalDate) {
         Log.d("ViewModel", "updateYearlyLists has been called")
         val fundsEvents = _fundsEvents.value ?: emptyList()
         val fundsEventsRecurring = _fundsEventsRecurring.value ?: emptyList()
@@ -185,6 +200,9 @@ class ViewModel @Inject constructor(
                     _previousYearEvents.postValue(previousEvents)
                     _currentYearEvents.postValue(currentEvents)
                     _nextYearEvents.postValue(nextEvents)
+                    _currentBudgetMonthEvents.postValue(
+                        currentEvents.filter { it.date.monthValue == currentDate.value.monthValue
+                    })
                     Log.d(
                         "Events Loading", """
                     Loading finished, direction 0:
@@ -443,7 +461,9 @@ class ViewModel @Inject constructor(
                     val expense = expenseByMonth[month]?.sumOf { (-it.amount).toDouble() }?.toFloat() ?: 0f
                     month to (income to expense)
                 }
-            }.awaitAll().forEach { (month, pair) -> monthlyResults[month] = pair }
+            }.awaitAll().forEach { (month, pair) -> if (pair.first > 0.1f || pair.second > 0.1f) {
+                Log.d ("ViewModel", "(${pair.first}), (${pair.second}) pair of income and expense set to the list")
+                monthlyResults[month] = pair} }
         }
         return monthlyResults
     }

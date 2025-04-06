@@ -1,7 +1,6 @@
 package com.example.sigmafinance.main
 
 import android.annotation.SuppressLint
-import android.icu.text.Collator.getDisplayName
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -10,13 +9,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,26 +35,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.InsertChartOutlined
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
-import androidx.compose.material.icons.filled.LineAxis
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,17 +77,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -104,7 +102,6 @@ import com.example.sigmafinance.database.TemporaryLists
 import com.example.sigmafinance.navigation.NavigationComponent
 import com.example.sigmafinance.ui.theme.Purple40
 import com.example.sigmafinance.ui.theme.SigmaFinanceTheme
-import com.example.sigmafinance.ui.theme.accentGrey
 import com.example.sigmafinance.ui.theme.balanceGreen
 import com.example.sigmafinance.ui.theme.balanceRed
 import com.example.sigmafinance.ui.theme.customText
@@ -117,7 +114,6 @@ import com.example.sigmafinance.ui.theme.richBlack
 import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -125,7 +121,6 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 import java.util.TreeMap
 
 class MainActivity : ComponentActivity() {
@@ -172,7 +167,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
 /*    val eventTree: TreeMap<LocalDate, TemporaryLists.DemonstrationEvent> =
         TreeMap(currentYearEvents.associateBy { it.date })*/
     val eventTree = remember {
-        mutableStateOf(TreeMap(currentYearEvents.associateBy { it.date }))
+        mutableStateOf(TreeMap(currentYearEvents.groupBy { it.date }))
     }
 
     LaunchedEffect(updateYearListsTrigger) {
@@ -198,8 +193,12 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
     fun updateCurrentMonthEvents(targetMonth: YearMonth) {
         val startOfMonth = targetMonth.atDay(1)
         val endOfMonth = targetMonth.atEndOfMonth()
-        eventTree.value = TreeMap(currentYearEvents.associateBy { it.date })
-        currentMonthEvents = eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.toList()
+        eventTree.value = TreeMap(currentYearEvents.groupBy { it.date })
+        Log.d("updateCurrentMonthEvents", "$currentYearEvents")
+        Log.d("updateCurrentMonthEvents", "${eventTree.value}")
+        Log.d("updateCurrentMonthEvents", "${eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values}")
+        Log.d("updateCurrentMonthEvents", "${eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.toList()}")
+        currentMonthEvents = eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.flatten()
     }
     fun decrementDate() {
         newDate = currentDate.minusMonths(1)
@@ -275,7 +274,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                 modifier = Modifier.scale(1.3f)
                             )
                         }
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { navController.navigate("Analytics") }) {
                             Icon(
                                 Icons.Filled.InsertChartOutlined,
                                 contentDescription = "Analytics",
@@ -283,7 +282,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                 modifier = Modifier.scale(1.3f)
                             )
                         }
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { navController.navigate(("Budget"))}) {
                             Icon(
                                 Icons.Filled.DateRange,
                                 contentDescription = "Budget",
@@ -310,7 +309,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(1f)
-                        .padding(vertical = 24.dp)
+                        .padding(vertical = 12.dp)
                         .clickable {
                             toggleEnterNewValueDialog = true
                         },
@@ -347,7 +346,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
@@ -402,6 +401,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                             interactionSource = remember { MutableInteractionSource() }) {
                                             selectedDate = dayNumber
                                             selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == dayNumber }
+                                            Log.d("MainScreen", "$selectedEventsLists from $currentMonthEvents")
                                             selectedNetIncome = netIncome
                                         })
                                     Box(
@@ -424,18 +424,17 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                         }
                     }
                 }
-                Column (modifier = Modifier.padding(vertical = 16.dp)){
+                Column (modifier = Modifier.padding(vertical = 0.dp)){
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             HorizontalDivider(
                                 modifier = Modifier
                                     .fillMaxWidth(0.7f)
-                                    .padding(vertical = 6.dp)
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -455,27 +454,29 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                             append("$selectedNetIncome")
                                         }
                                     },
-                                    style = standardText
+                                    style = standardText,
+                                    modifier = Modifier.padding(vertical = 16.dp)
                                 )
                             }
                             HorizontalDivider(
                                 modifier = Modifier
                                     .fillMaxWidth(0.7f)
-                                    .padding(vertical = 6.dp)
                             )
                         }
                     }
                     if (selectedEventsLists.isNotEmpty()) {
                         Card (modifier = Modifier
                             .padding(horizontal = 16.dp)
+                            .padding(vertical = 16.dp)
                             .fillMaxWidth(1f)
-                            .fillMaxHeight(0.9f),
+                            .fillMaxHeight(1f),
                             shape = RoundedCornerShape(16.dp
                             )){
                             LazyColumn(modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)) {
                                 items(selectedEventsLists) { event ->
+                                    Spacer(modifier = Modifier.height(4.dp))
                                    GradientItemBackground {
                                        Row(
                                            modifier = Modifier
@@ -483,8 +484,9 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                                .height(32.dp)
                                                .padding(
                                                    start = 12.dp,
-                                                   end = 12.dp,
-                                               ),
+                                                   end = 12.dp
+                                               )
+                                               .clickable { selectedEvent = event },
                                            horizontalArrangement = Arrangement.SpaceBetween,
                                            verticalAlignment = Alignment.CenterVertically
                                        )
@@ -492,6 +494,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                            Text(
                                                text = event.name,
                                                style = standardText,
+                                               color = Color.White
                                            )
                                            Text(
                                                text = "${event.type}",
@@ -949,39 +952,39 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
 
 @Composable
 fun AnalyticsScreen(navController: NavHostController, viewModel: ViewModel){
-    var selectedPeriod by remember { mutableStateOf("Months") }
+    var selectedPeriod by remember { mutableStateOf("Monthly") }
+    var selectedPeriodValue by remember { mutableStateOf(AnnotatedString("")) }
     val currentYearEvents by viewModel.currentYearEvents.observeAsState(emptyList())
-    var newDate by remember { mutableStateOf(LocalDate.now()) }
     var currentDate by remember { viewModel.currentDate }
     var updateYearListsTrigger by remember { mutableLongStateOf(0L) }
     var updateYearListsKey by remember { mutableIntStateOf(0) }
-    var monthlyTotals: List<Pair<Float, Float>> = emptyList()
+    var monthlyTotals by remember {mutableStateOf(mutableListOf<Pair<Float, Float>>())}
+     fun updateYearlyLists(direction: Int){
+        viewModel.updateYearlyLists(direction, currentDate)
+    }
     fun decrementDate() {
-        newDate = currentDate.minusMonths(1)
-        if (newDate.year < currentDate.year) {
-            Log.d("DecrementDate", "DecrementDate caused update yearly lists")
-            updateYearListsKey = 1
+        currentDate = currentDate.minusYears(1)
+        Log.d("DecrementDate", "DecrementDate caused update yearly lists")
+          /*  updateYearListsKey = 1
             updateYearListsTrigger = System.currentTimeMillis()
-        }
-        currentDate = newDate
+*/
+        updateYearlyLists(1)
     }
 
-    fun incrementDate() {
-        newDate = currentDate.plusMonths(1)
-        if (newDate.year > currentDate.year) {
-            Log.d("incrementDate", "incrementDate caused update yearly lists")
-            updateYearListsKey = 2
-            updateYearListsTrigger = System.currentTimeMillis()
-
-        }
-        currentDate = newDate
+     fun incrementDate() {
+        currentDate = currentDate.plusYears(1)
+         Log.d("incrementDate", "incrementDate caused update yearly lists")
+            /*updateYearListsKey = 2
+            updateYearListsTrigger = System.currentTimeMillis()*/
+        updateYearlyLists(2)
     }
     LaunchedEffect(updateYearListsTrigger) {
-        Log.d("Main Activity", "updateYearListsTrigger triggered, newDate is $newDate")
-        viewModel.updateYearlyLists(updateYearListsKey, newDate)
+        Log.d("Main Activity", "updateYearListsTrigger triggered, newDate is $currentDate")
+        viewModel.updateYearlyLists(updateYearListsKey, currentDate)
     }
+
     LaunchedEffect (Unit, currentDate) {
-        monthlyTotals =  viewModel.analyticsGetIncomeAndExpenses(currentYearEvents)
+        monthlyTotals =  viewModel.analyticsGetIncomeAndExpenses(currentYearEvents).toMutableList()
     }
     Scaffold(containerColor = colorScheme.primaryContainer,
         topBar = {
@@ -1024,37 +1027,56 @@ fun AnalyticsScreen(navController: NavHostController, viewModel: ViewModel){
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(1f)
-                .background(colorScheme.primaryContainer,), contentAlignment = Alignment.TopCenter
+                .background(colorScheme.primaryContainer), contentAlignment = Alignment.TopCenter
         ) {
             Column(Modifier.padding(top = 17.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Months",
-                        style = customText,
-                        fontFamily = montserratFontFamily,
-                        color = if (selectedPeriod == "Months") {
-                            periwinkle
-                        } else {
-                            Color.White
-                        },
-                        modifier = Modifier.clickable { selectedPeriod = "Months" }
+                    // Left Text: "Months"
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // Equal space on both sides
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.CenterEnd // Align text to right within its space
+                    ) {
+                        Text(
+                            text = "Months",
+                            style = customText,
+                            fontFamily = montserratFontFamily,
+                            color = if (selectedPeriod == "Monthly") periwinkle else Color.White,
+                            modifier = Modifier
+                                .clickable { selectedPeriod = "Monthly" }
+                                .padding(end = 16.dp) // Consistent padding
+                        )
+                    }
+                    // Center: VerticalDivider
+                    VerticalDivider(
+                        thickness = 2.dp,
+                        modifier = Modifier
+                            .height(24.dp)
+                            .padding(horizontal = 48.dp) // Symmetric padding
                     )
-                    VerticalDivider(thickness = 2.dp)
-                    Text(
-                        text = "Years",
-                        style = customText,
-                        fontFamily = montserratFontFamily,
-                        color = if (selectedPeriod == "Years") {
-                            periwinkle
-                        } else {
-                            Color.White
-                        },
-                        modifier = Modifier.clickable { selectedPeriod = "Years" }
-                    )
+                    // Right Text: "Years"
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // Equal space on both sides
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.CenterStart // Align text to left within its space
+                    ) {
+                        Text(
+                            text = "Years",
+                            style = customText,
+                            fontFamily = montserratFontFamily,
+                            color = if (selectedPeriod == "Yearly") periwinkle else Color.White,
+                            modifier = Modifier
+                                .clickable { selectedPeriod = "Yearly" }
+                                .padding(start = 16.dp) // Consistent padding
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1070,7 +1092,7 @@ fun AnalyticsScreen(navController: NavHostController, viewModel: ViewModel){
                         )
                     }
                     Text(
-                        text = "${currentDate.month} ${currentDate.year} ",
+                        text = "${currentDate.year} ",
                         style = customText,
                         fontFamily = montserratFontFamily,
                         color = Color.White
@@ -1084,23 +1106,371 @@ fun AnalyticsScreen(navController: NavHostController, viewModel: ViewModel){
                         )
                     }
                 }
+                fun formatPeriodText(index: Int, pair: Pair<Float, Float>): AnnotatedString {
+                return buildAnnotatedString {
+                        withStyle(style = customTitle.toSpanStyle()) {
+                            append("Selected period: ")
+                        }
+                        withStyle(style = standardText.toSpanStyle()) {
+                            append(MonthName.entries[index].displayName().substring(0, 3))
+                        }
+                        withStyle(style = customTitle.toSpanStyle()) {
+                            append(" ")
+                        }
+                        withStyle(style = standardText.toSpanStyle()) {
+                            append("${currentDate.year}")
+                        }
+                        append("\n")
+                        withStyle(style = customTitle.toSpanStyle()) {
+                            append("Gross income: ")
+                        }
+                        withStyle(style = standardText.toSpanStyle()) {
+                            append("${pair.first} UAH")
+                        }
+                        append("\n")
+                        withStyle(style = customTitle.toSpanStyle()) {
+                            append("Gross expenses: ")
+                        }
+                        withStyle(style = standardText.toSpanStyle()) {
+                            append("${pair.second} UAH")
+                        }
+                }
+            }
                 Spacer(modifier = Modifier.height(24.dp))
-                if (selectedPeriod == "monthly") {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(4),
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(4.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        items(monthlyTotals) { pair ->
-                            AnalyticsGraph(pair.first, pair.second)
+                Surface(modifier = Modifier
+                    .animateContentSize()){
+                    if (selectedPeriodValue.isNotEmpty()) {
+                        Text(selectedPeriodValue)
+                    }
+                }
+                if (monthlyTotals.isEmpty()) {
+                    Text("No events to show analytics on, go earn some money", style = customText)
+                }
+                else {
+                    when (selectedPeriod) {
+                        "Monthly" -> {
+                            Log.d("AnalyticsScreen", "$monthlyTotals")
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(4),
+                                modifier = Modifier
+                                    .fillMaxWidth(1f)
+                                    .padding(top = 20.dp)
+                                    .padding(horizontal = 20.dp),
+                                contentPadding = PaddingValues(20.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalArrangement = Arrangement.Bottom
+                            ) {
+                                itemsIndexed(monthlyTotals) { index, pair ->
+                                    Column(
+                                        modifier = Modifier
+                                            .width(40.dp) // 20% of parent width
+                                            .height(140.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally// Fixed height for strict grid
+                                    ) {
+                                        AnalyticsGraph(
+                                            pair.first,
+                                            pair.second
+                                        ) {
+                                            if (selectedPeriodValue.text.isEmpty()) {
+                                                selectedPeriodValue = formatPeriodText(index, pair)
+                                            }
+                                            else {
+                                                selectedPeriodValue = AnnotatedString("")
+                                            }
+                                        }
+                                        Spacer(Modifier.weight(1f))
+                                        HorizontalDivider(
+                                            thickness = 2.dp,
+                                            modifier = Modifier
+                                                .padding(vertical = 8.dp)
+                                                .fillMaxWidth(0.8f),
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            MonthName.entries[index].displayName().substring(0, 3),
+                                            style = standardText,
+                                            color = periwinkle,
+                                            modifier = Modifier
+                                                .height(20.dp)
+                                                .wrapContentHeight()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        "Yearly" -> {
+                            AnalyticsGraphYearly(monthlyData = monthlyTotals)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp)
+                                    .weight(0.2f),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f) // Equal space on both sides
+                                        .fillMaxHeight(),
+                                    contentAlignment = Alignment.CenterEnd // Align text to left within its space
+                                ) {
+                                    Text(
+                                        text = "Income",
+                                        style = customTitle,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.padding(horizontal = 32.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f) // Equal space on both sides
+                                        .fillMaxHeight(),
+                                    contentAlignment = Alignment.CenterStart // Align text to left within its space
+                                ) {
+                                    Text(
+                                        text = "Expenses",
+                                        style = customTitle
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                else {
-                    AnalyticsGraphYearly(monthlyData = monthlyTotals)
+            }
+        }
+    }
+}
+
+@Composable
+fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
+    val currentBudget by viewModel.getBudgetValue().collectAsState(initial = 0.0f)
+    val currentBudgetMonthEvents = viewModel.currentBudgetMonthEvents.observeAsState(emptyList())
+    var spentMoney by remember {
+        mutableFloatStateOf(0f)
+    }
+    var progress by remember {
+        mutableFloatStateOf(0f)
+    }
+
+    LaunchedEffect(currentBudgetMonthEvents) {
+        spentMoney = currentBudgetMonthEvents.value
+            .filter { it.amount < 0 }
+            .sumOf { -it.amount.toDouble() }
+            .toFloat()
+        progress = if (currentBudget > 0.0f){
+            (spentMoney / currentBudget)
+        } else {
+            1f
+        }
+    }
+
+
+
+    Scaffold(containerColor = colorScheme.primaryContainer,
+        topBar = {
+            Box(modifier = Modifier
+                .fillMaxWidth(1f)
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF9F2BB1),
+                            Color(0xFFEBA4FF)
+                        )
+                    )
+                ), contentAlignment = Alignment.CenterStart) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(1f)
+                        .padding(vertical = 19.dp)
+                        .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Absolute.SpaceAround
+                ) {
+                    Text("Budget", style = customTitle, color = Color.White, modifier = Modifier.fillMaxWidth(0.9f))
+                    IconButton(onClick = { navController.navigate("main")}) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            tint = Color.White,
+                            contentDescription = "Budget",
+                            modifier = Modifier.scale(1.3f)
+                        )
+                    }
                 }
+            }
+        }, modifier = Modifier
+            .background(colorScheme.primaryContainer,)
+            .fillMaxSize(1f)
+    ) { innerPadding ->
+        BackHandler {
+            navController.navigate("main")
+        }
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(1f)
+                .background(colorScheme.primaryContainer), contentAlignment = Alignment.TopCenter
+        ) {
+            Column(Modifier.padding(top = 17.dp)) {
+                val currentDate by remember {
+                    mutableStateOf(viewModel.currentDate)
+                }
+                Log.d("BudgetScreen", "${currentDate.value.dayOfMonth.toFloat()}\n" +
+                        "${currentDate.value.plusMonths(1).minusDays(1).dayOfMonth}")
+                BudgetCard(
+                    budgetAmount = "${currentBudget - spentMoney} UAH",
+                    totalBudget = "$currentBudget",
+                    statusText = "",
+                    timeProgress = (currentDate.value.dayOfMonth.toFloat() / LocalDate.of(currentDate.value.year, currentDate.value.monthValue, 1).plusMonths(1).minusDays(1).dayOfMonth),
+                    progress = progress.coerceAtMost(1f),
+                    viewModel = viewModel
+                )
+
+
+
+                val numberOfDays = currentDate.value.lengthOfMonth()
+
+                val dailyExpensesMap = currentBudgetMonthEvents.value
+                    .filter { it.amount < 0 }
+                    .groupBy { it.date.dayOfMonth }
+                    .mapValues { -it.value.sumOf { it.amount.toDouble() } }
+                    .filter { it.value > 0.1f }
+
+                // Create pairs of (day, totalExpense) for every day of the month
+                val dailyExpensePairs = (1..numberOfDays).map { day ->
+                    val totalExpenseForDay = dailyExpensesMap[day] ?: 0.0
+                    day to totalExpenseForDay
+                }
+                var cumulative = 0.0
+                dailyExpensePairs.forEach { (day, dailyExpense) ->
+                    cumulative += dailyExpense
+                }
+
+                val labelDays = listOf(1, 8, 15, 22, numberOfDays).distinct()
+
+
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF6200EE)) // Purple background
+                            .border(2.dp, Color.Blue, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // Title
+                            Text(
+                                text = "Budget Expenses by Day",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Y-axis labels and graph
+                            Row {
+                                // Y-axis labels (percentages)
+                                Column(
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .height(200.dp),
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    listOf("100%", "75%", "50%", "25%", "0%").forEach { label ->
+                                        Text(label, color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+
+                                // Graph area
+                                Column {
+                                    Canvas(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                    ) {
+                                        val width = size.width
+                                        val height = size.height
+
+                                        // Draw horizontal grid lines (0% to 100%)
+                                        for (i in 0..4) {
+                                            val y = i * (height / 4)
+                                            drawLine(
+                                                color = Color.White,
+                                                start = Offset(0f, y),
+                                                end = Offset(width, y),
+                                                strokeWidth = 1.dp.toPx(),
+                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                            )
+                                        }
+
+                                        // Draw vertical grid lines
+                                        for (day in labelDays) {
+                                            val x = (day / numberOfDays.toFloat()) * width
+                                            drawLine(
+                                                color = Color.White,
+                                                start = Offset(x, 0f),
+                                                end = Offset(x, height),
+                                                strokeWidth = 1.dp.toPx(),
+                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                            )
+                                        }
+                                        if (cumulative > 0) {
+
+                                            val points = dailyExpensePairs.map { (day, total) ->
+                                                    val percentage = (total / cumulative) * 100f
+                                                    val x = (day / numberOfDays.toFloat()) * width
+                                                    val y = height * (1 - percentage / 100f)
+                                                    if (total > 1f){
+                                                        Offset(x, y.toFloat())
+                                                    }
+                                                  else {
+                                                      Offset(x, 0f)
+                                                    }
+                                            }
+
+                                            // Draw dashed line connecting points
+                                            drawPath(
+                                                path = Path().apply {
+                                                    if (points.isNotEmpty()) {
+                                                        if (points[0].y != 0f){
+                                                            moveTo(points[0].x, points[0].y)
+                                                        }
+                                                        else {
+                                                            val percentage = (0f / cumulative) * 100f
+                                                            val x = (1 / numberOfDays.toFloat()) * width
+                                                            val y = height * (1 - percentage / 100f)
+                                                            moveTo(x, y.toFloat())
+                                                        }
+                                                        points.drop(1).forEach { point ->
+                                                            lineTo(point.x, point.y)
+                                                        }
+                                                    }
+                                                },
+                                                color = Color.White,
+                                                style = Stroke(
+                                                    width = 2.dp.toPx(),
+                                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                                )
+                                            )
+
+                                            // Draw dots at data points
+                                            points.forEach { point ->
+                                                drawCircle(
+                                                    color = if (point.y > 100f){Color.Black} else {Color.Transparent},
+                                                    radius = 4.dp.toPx(),
+                                                    center = point
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // X-axis labels
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        labelDays.forEach { day ->
+                                            Text(day.toString(), color = Color.White, fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
             }
         }
     }

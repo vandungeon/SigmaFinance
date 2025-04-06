@@ -1,8 +1,10 @@
 package com.example.sigmafinance.main
-
-
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +15,17 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -24,14 +34,20 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,15 +56,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Brush.Companion.horizontalGradient
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection.Companion.Content
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -64,6 +91,7 @@ import com.example.sigmafinance.ui.theme.jordyBlue
 import com.example.sigmafinance.ui.theme.montserratFontFamily
 import com.example.sigmafinance.ui.theme.periwinkle
 import com.example.sigmafinance.ui.theme.richBlack
+import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -187,35 +215,47 @@ fun GreyScaleCard(modifier: Modifier = Modifier,
         }
     }
 }
+
+
 @Composable
-fun AnalyticsGraph(income: Float, expenses: Float){
+fun AnalyticsGraph(income: Float, expenses: Float, onclick: () -> Unit){
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp), // Optional padding around the Row
-        horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between rectangles
+            .fillMaxWidth(0.7f)
+            .padding(0.dp)
+            .clickable { onclick() },
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom
     ) {
         val columnHeight = 100f
         var leftColumnHeight = columnHeight
         var rightColumnHeight = columnHeight
-        if (income == 0f){ leftColumnHeight = 0f }
-        else if (expenses == 0f) { rightColumnHeight = 0f }
+        if ((income + expenses) < 0.1f){
+            leftColumnHeight = 0f
+            rightColumnHeight = 0f}
         else {
-            if (income > expenses){ rightColumnHeight = (expenses / income) * (columnHeight / 100) }
-            else { leftColumnHeight = (income / expenses) * (columnHeight / 100) }
+        if (income < 0.1f) { leftColumnHeight = 0f
+        } else if (expenses < 0.1f) { rightColumnHeight = 0f
         }
+            if (income > expenses) {
+                rightColumnHeight = (expenses / income) * columnHeight
+            } else {
+                leftColumnHeight = (income / expenses) * columnHeight
+            }
+
+    }
         //Income
         Box(
             modifier = Modifier
-                .width(100.dp) // Same width
+                .weight(1f)
                 .height((leftColumnHeight).dp) // Different height
                 .background(balanceGreen) // First color
         )
         //Expenses
         Box(
             modifier = Modifier
-                .width(100.dp) // Same width
+                .weight(1f)
                 .height((rightColumnHeight).dp) // Different height
                 .background(balanceRed) // Second color
         )
@@ -229,62 +269,81 @@ fun AnalyticsGraphYearly(monthlyData: List<Pair<Float, Float>>) {
     val monthlyResultsIncome = Array(12) { 0f }.toMutableList()
     val monthlyResultsExpenses = Array(12) { 0f }.toMutableList()
 
-    monthlyData.forEachIndexed{ index, (income, expenses)  ->
+    monthlyData.forEachIndexed { index, (income, expenses) ->
         monthlyResultsIncome[index] = income
         monthlyResultsExpenses[index] = expenses
     }
     val incomeColors = listOf(
         Color(0xFF4CAF50), Color(0xFF66BB6A), Color(0xFF81C784), Color(0xFF9CCC65),
         Color(0xFFB2FF59), Color(0xFFC6FF00), Color(0xFFEEFF41), Color(0xFFFFF176),
-        Color(0xFFFFF9C4), Color(0xFFE6EE9C), Color(0xFFDCE775), Color(0xFFD4E157)
+        Color(0xFFFFF9C4), Color(0xFFE6EE9C), Color(0xFF66BB6A), Color(0xFF9CCC65)
     )
     val expenseColors = listOf(
         Color(0xFFF44336), Color(0xFFE57373), Color(0xFFEF9A9A), Color(0xFFFF8A80),
         Color(0xFFFF5252), Color(0xFFFF1744), Color(0xFFD81B60), Color(0xFFC2185B),
         Color(0xFFAD1457), Color(0xFFF06292), Color(0xFFF48FB1), Color(0xFFF8BBD0)
     )
-    Column () {
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between columns
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.Start
+                .weight(1f) // Equal width for both columns
+                .clip(RoundedCornerShape(20.dp))
+                .border(width = 2.dp, color = Color.White, shape = RoundedCornerShape(20.dp))
+                .fillMaxHeight(0.9f)
         ) {
             monthlyResultsIncome.forEachIndexed { index, item ->
-                val incomePercent = if (totalIncome > 0f) (item / totalIncome) else 0f
-                Box(
-                    modifier = Modifier
-                        .weight(incomePercent) // Width proportional to total
-                        .fillMaxHeight()
-                        .background(expenseColors[index])
-                ){
-                    Column {
-                        Text(text = item.toString())
-                        Text(text = {MonthName.entries[index].displayName().substring(0, 3)}.toString())
+                val incomePercent =
+                    if (totalIncome > 0.1f && item > 0.1f) (item / totalIncome) else 0.083f
+                if (incomePercent > 0.0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(incomePercent)
+                            .widthIn(min = 80.dp) // Wide enough for text
+                            .background(incomeColors[index]),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${item} ${
+                                MonthName.entries[index].displayName().substring(0, 3)
+                            }",
+                            style = standardText,
+                            color = Color.Black
+                        )
                     }
-
                 }
             }
         }
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp) // Fixed height for all boxes
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.Start
+                .weight(1f) // Equal width for both columns
+                .clip(RoundedCornerShape(20.dp))
+                .fillMaxHeight(0.9f)
+                .border(width = 2.dp, color = Color.White, shape = RoundedCornerShape(20.dp))
         ) {
             monthlyResultsExpenses.forEachIndexed { index, item ->
-                val expensePercent = if (totalExpenses > 0f) (item / totalExpenses) else 0f
-                Box(
-                    modifier = Modifier
-                        .weight(expensePercent)
-                        .fillMaxHeight()
-                        .background(expenseColors[index])
-                ){
-                    Column {
-                        Text(text = item.toString())
-                        Text(text = {MonthName.entries[index].displayName().substring(0, 3)}.toString())
+                val expensePercent =
+                    if (totalExpenses > 0.1f && item > 0.1f) (item / totalExpenses) else 0.0833f
+                if (expensePercent > 0.0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(expensePercent)
+                            .widthIn(min = 80.dp) // Wide enough for text
+                            .background(expenseColors[index]),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${item} ${
+                                MonthName.entries[index].displayName().substring(0, 3)
+                            }",
+                            style = standardText,
+                        )
                     }
                 }
             }
@@ -331,7 +390,7 @@ fun AddFundsEvent(
 ) {
     var eventName by remember { mutableStateOf("") }
     var eventAmount by remember { mutableStateOf("") }
-    var repeatInterval by remember { mutableIntStateOf(1) }
+    var repeatInterval by remember { mutableStateOf("1") }
     var repeatUnit by remember { mutableStateOf("Don't repeat") }
     var endCondition by remember { mutableStateOf("Never") }
     var endAfterOccurrences by remember { mutableStateOf("0") }
@@ -346,7 +405,14 @@ fun AddFundsEvent(
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     fun validateInput(name: String, amount: String): Boolean {
-        return name.isNotEmpty() && amount.toFloatOrNull() != null && (endCondition != "Until date" || isDateValid)
+        val isNameValid = name.isNotEmpty()
+        val isAmountValid = amount.isNotEmpty() && amount.matches(Regex("^-?\\d+\\.?\\d+$")) && amount.toFloatOrNull() != null
+        val isEndConditionValid = when (endCondition) {
+            "Until date" -> endDateInput.isNotEmpty() && isDateValid
+            "After N times" -> endAfterOccurrences.isNotEmpty() && endAfterOccurrences.toIntOrNull() != null && endAfterOccurrences.toInt() > 0
+            else -> true
+        }
+        return isNameValid && isAmountValid && isEndConditionValid
     }
     fun validateDate(input: String): Boolean {
         return try {
@@ -376,7 +442,7 @@ fun AddFundsEvent(
                 )
                 CustomTextField(
                     value = eventAmount,
-                    onValueChange = { eventAmount = if (it.toIntOrNull() != null){ it } else {""}},
+                    onValueChange = { eventAmount = it},
                     label = "Amount",
                     modifier = Modifier.fillMaxWidth(1f)
                 )
@@ -419,11 +485,7 @@ fun AddFundsEvent(
                         Text("Every", color = Color.White)
                         CustomTextField(
                             value = repeatInterval.toString(),
-                            onValueChange = {
-                                if(it.toIntOrNull() != null){
-                                    repeatInterval = it.toInt()
-                                }
-                                            },
+                            onValueChange = { repeatInterval = it },
                             modifier = Modifier
                                 .width(110.dp)
                                 .padding(horizontal = 16.dp)
@@ -467,7 +529,7 @@ fun AddFundsEvent(
                             CustomTextField(
                                 value = endAfterOccurrences,
                                 onValueChange = {
-                                    endAfterOccurrences = if (it.toIntOrNull() != null && it.toInt() > 0){ it } else {""}},
+                                    endAfterOccurrences = it},
                                 label = "Occurrences",
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -502,7 +564,7 @@ fun AddFundsEvent(
                         } else {
                             null
                         }
-                        onConfirm(eventName, eventAmount, repeatInterval, repeatUnit, endCondition, endAfterOccurrences.toInt(), endDate)
+                        onConfirm(eventName, eventAmount, repeatInterval.toInt(), repeatUnit, endCondition, endAfterOccurrences.toInt(), endDate)
                         onDismiss()
                     }, colors = customButtonColors(), enabled = validateInput(eventName, eventAmount)) {
                         Text("Confirm")
@@ -849,6 +911,208 @@ fun EnterNewMoneyValueDialog(
             }
 
         }
+    }
+}
+@Composable
+fun BudgetCard(
+    budgetAmount: String,
+    totalBudget: String,
+    progress: Float,
+    statusText: String,
+    timeProgress: Float,
+    modifier: Modifier = Modifier,
+    viewModel: ViewModel
+) {
+    var isEditingBudget by remember { mutableStateOf(false) }
+    var newBudget by remember { mutableStateOf("") }
+    LaunchedEffect(key1 = newBudget) {
+        if (newBudget.toFloatOrNull() != null){
+        viewModel.saveBudgetValue(newBudget.toFloat()) }
+    }
+    val currentDate by remember {
+        mutableStateOf(viewModel.currentDate)
+    }
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .clickable { isEditingBudget = !isEditingBudget },
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+        ) {
+            HeaderSection(budgetAmount = budgetAmount, totalBudget = totalBudget)
+            ProgressSection(progress = progress, statusText = statusText, timeProgress = timeProgress)
+            if (isEditingBudget) {
+                NewBudgetTextField(
+                    pastBudget = newBudget,
+                    onNewBudgetChange = { newBudget = it }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(budgetAmount: String, totalBudget: String) {
+    Surface(
+        color = periwinkle, // Purple background for header
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    brush =
+                    horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFBA57D5),
+                            Color(0xFFEBA4FF)
+                        )
+                    )
+                )
+                .padding(12.dp)
+        ) {
+            Text(
+                text = "Your budget for this month is:",
+                style = customText,
+                color = Color.White,
+                fontSize = 16.sp,
+            )
+            Text(
+                text = "$budgetAmount out of $totalBudget",
+                style = customTitle,
+                color = Color.White,
+                fontSize = 20.sp,
+            )
+        }
+    }
+}
+
+@Composable
+fun ProgressSection(progress: Float, statusText: String, timeProgress: Float) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .padding(horizontal = 16.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.weight(timeProgress - 0.05f))
+            Text(
+                text = "today",
+                fontSize = 12.sp,
+                fontFamily = montserratFontFamily,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.weight(1f - timeProgress + 0.05f))
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+        ) {
+            // Progress bar for money spent
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(16.dp),
+                color = periwinkle,
+                trackColor = Color.Gray
+            )
+
+            // Draw the month progress line using Canvas
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+            ) {
+                val lineWidth = 2.dp.toPx()
+                val lineHeight = size.height
+                val xPosition = size.width * timeProgress.coerceIn(0f, 1f)
+
+                drawLine(
+                    color = Color.White,
+                    start = Offset(x = xPosition - lineWidth / 2, y = 0f),
+                    end = Offset(x = xPosition - lineWidth / 2, y = lineHeight),
+                    strokeWidth = lineWidth
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = statusText,
+            style = standardText,
+            fontSize = 14.sp,
+            color = Color.Black
+        )
+    }
+}
+@Composable
+fun NewBudgetTextField(pastBudget: String, onNewBudgetChange: (String) -> Unit) {
+    var budget by remember {
+        mutableStateOf(pastBudget)
+    }
+    var isEnabled by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(key1 = budget) {
+        if (budget.toFloatOrNull() != null ){
+            if (budget.toFloat() > 0f){
+                isEnabled = true
+            }
+        }
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White) // Purple background for text field section
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            text = "New budget",
+            color = Color.White,
+            fontSize = 16.sp
+        )
+        TextField(
+            value = budget,
+            onValueChange = { newValue ->
+                budget = newValue
+            },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+            placeholder = {
+                Text(
+                    text = "Enter new budget",
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            },
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = periwinkle,
+                focusedIndicatorColor = periwinkle,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = periwinkle.copy(alpha = 1f),
+                unfocusedContainerColor = periwinkle.copy(alpha = 0.7f)
+            ),
+            trailingIcon = {
+                IconButton(
+                    onClick = { onNewBudgetChange(budget) },
+                    enabled = isEnabled
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Add event",
+                        tint = Color.White
+                    )
+                }
+            }
+        )
+        Spacer(modifier = Modifier.height(21.dp))
     }
 }
 
