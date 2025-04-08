@@ -14,7 +14,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -47,9 +46,11 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.InsertChartOutlined
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -61,6 +62,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -81,6 +83,7 @@ import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Brush.Companion.horizontalGradient
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -113,6 +116,7 @@ import com.example.sigmafinance.ui.theme.projectionHighlight
 import com.example.sigmafinance.ui.theme.richBlack
 import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Instant
@@ -122,6 +126,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.TreeMap
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,10 +148,11 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
     val coroutineScope = rememberCoroutineScope()
     //basic functionality vital information
     val currentAmountOfMoney by viewModel.getMoneyValue().collectAsState(initial = 0.0f)
+
     var currentDate by remember { viewModel.currentDate }
     var listOfDays by remember { viewModel.listOfDays }
     var selectedEventsLists by remember { mutableStateOf(emptyList<TemporaryLists.DemonstrationEvent>()) }
-    val lastLogin by viewModel.getLastLogin().collectAsState(initial = LocalDate.now())
+    val lastLogin by viewModel.getLastLogin().collectAsState(initial = null)
     //ui
     var newDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedNetIncome by remember { mutableFloatStateOf(0f) }
@@ -186,19 +192,18 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
         updateListsTrigger = System.currentTimeMillis()
-        selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
-        selectedNetIncome = selectedEventsLists.sumOf { it.amount.toDouble() }.toFloat()
     }
 
     fun updateCurrentMonthEvents(targetMonth: YearMonth) {
         val startOfMonth = targetMonth.atDay(1)
         val endOfMonth = targetMonth.atEndOfMonth()
         eventTree.value = TreeMap(currentYearEvents.groupBy { it.date })
-        Log.d("updateCurrentMonthEvents", "$currentYearEvents")
-        Log.d("updateCurrentMonthEvents", "${eventTree.value}")
-        Log.d("updateCurrentMonthEvents", "${eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values}")
-        Log.d("updateCurrentMonthEvents", "${eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.toList()}")
+        Log.d("updateCurrentMonthEvents", "Events for current year: $currentYearEvents")
+        Log.d("updateCurrentMonthEvents", "Event tree: ${eventTree.value}")
+        Log.d("updateCurrentMonthEvents", "Current month events ${eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values}")
         currentMonthEvents = eventTree.value.subMap(startOfMonth, true, endOfMonth, true).values.flatten()
+        selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
+        selectedNetIncome = selectedEventsLists.sumOf { it.amount.toDouble() }.toFloat()
     }
     fun decrementDate() {
         newDate = currentDate.minusMonths(1)
@@ -211,8 +216,7 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         listOfDays = getDaysInMonth(currentDate.year, currentDate.monthValue)
         selectedDate = "1"
         updateListsTrigger = System.currentTimeMillis()
-        selectedEventsLists = currentMonthEvents.filter { it.date.dayOfMonth.toString() == selectedDate }
-        selectedNetIncome = selectedEventsLists.sumOf { it.amount.toDouble() }.toFloat()
+
     }
     LaunchedEffect(updateListsTrigger, events, recurringEvents, currentYearEvents) {
             updateCurrentMonthEvents(YearMonth.of(currentDate.year, currentDate.month))
@@ -222,19 +226,32 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
         updateYearListsTrigger = System.currentTimeMillis()
     }
 
-    LaunchedEffect(Unit) {
-        if (lastLogin != LocalDate.now()) {
-            viewModel.saveMoneyValue(
-                viewModel.getOccurrencesBetweenLastAndCurrentLogin(
-                    lastLogin,
+    LaunchedEffect(Unit, lastLogin) {
+        if (lastLogin != null){
+            if (lastLogin!! != LocalDate.now()) {
+                Log.d(
+                    "Login date check",
+                    "Last login wasn't today, new money value has to be calculated\n" +
+                            "Old amount of money: $currentAmountOfMoney\n" +
+                            "Old login: $lastLogin\n"
+                )
+                val newValue: Float = viewModel.getOccurrencesBetweenLastAndCurrentLogin(
+                    lastLogin!!,
                     LocalDate.now(), 0
-                ) as Float + currentAmountOfMoney
-            )
-            Log.d(
-                "Login date check",
-                "Last login wasn't today, new money value has to be calculated"
-            )
-            viewModel.saveLastLogin(LocalDate.now())
+                ) as Float
+                viewModel.saveMoneyValue((newValue + currentAmountOfMoney)
+                )
+                Log.d("Login date check",
+                    "New amount of money: added $newValue, got total $currentAmountOfMoney\n" +
+                            "New login: $lastLogin\n")
+                viewModel.saveLastLogin(LocalDate.now())
+            }
+            else{
+                Log.d(
+                    "Login date check", "Dates match, no need for update" +
+                            "\n Last login: $lastLogin" +
+                            "\n Current login: ${LocalDate.now()}")
+            }
         }
     }
 
@@ -494,16 +511,19 @@ fun MainScreen(navController: NavHostController, viewModel: ViewModel) {
                                            Text(
                                                text = event.name,
                                                style = standardText,
+                                               fontSize = 14.sp,
                                                color = Color.White
                                            )
                                            Text(
                                                text = "${event.type}",
                                                style = standardText,
+                                               fontSize = 14.sp,
                                                color = Color.White
                                            )
                                            Text(
                                                text = event.amount.toString() + " UAH",
                                                style = standardText,
+                                               fontSize = 14.sp,
                                                color = Color.White
                                            )
 
@@ -845,7 +865,7 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                         DatePickerDialog(
                             onDismissRequest = { toggleAmountByDate = false },
                             confirmButton = {
-                                TextButton(onClick = {
+                                Button(onClick = {
                                     val millis = datePickerState.selectedDateMillis
                                     if (millis != null) {
                                         selectedDate = Instant.ofEpochMilli(millis)
@@ -866,12 +886,53 @@ fun ProjectionScreen(navController: NavHostController, viewModel: ViewModel, bas
                                             toggleAmountByDate = false
                                         }
                                     }
-                                }) {
-                                    Text("Ok")
+                                },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                                ) {
+                                    Text("Select", style = customTitle)
                                 }
-                            }
+                            },
+                            colors = DatePickerDefaults.colors(containerColor = periwinkle)
                         ) {
-                            DatePicker(state = datePickerState)
+                            DatePicker(state = datePickerState,
+                                colors = DatePickerDefaults.colors(
+                                    containerColor = periwinkle,
+                                    selectedDayContainerColor = Color.White,
+                                    selectedDayContentColor = richBlack,
+                                    dayContentColor = Color.White,
+                                    todayDateBorderColor = Color.White,
+                                    yearContentColor = Color(0xFF333333),
+                                    selectedYearContainerColor = Color.White,
+                                    selectedYearContentColor = richBlack,
+                                    weekdayContentColor = Color.White,
+                                    todayContentColor = Color.White,
+                                    dividerColor = Color.White,
+                                    headlineContentColor = Color.White,
+                                    navigationContentColor = Color.White,
+                                    titleContentColor = Color.White,
+                                    dateTextFieldColors = TextFieldDefaults.colors(
+                                        focusedTextColor = richBlack,
+                                        focusedIndicatorColor = Color.White,
+                                        unfocusedIndicatorColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        errorIndicatorColor = Color.Red,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color(0xFF363636),
+                                        focusedLabelColor = Color.White,
+
+
+                                    ),
+
+                                ),
+                                modifier = Modifier.background(
+                                    brush = horizontalGradient(
+                                        colors = listOf(
+                                            Color(0xFF9F2BB1),
+                                            Color(0xFFEBA4FF)
+                                        )
+                                    )
+                                )
+                            )
                         }
                     }
                     if (toggleDateByAmountDialog) {
@@ -1248,8 +1309,10 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
     var progress by remember {
         mutableFloatStateOf(0f)
     }
+    var retrigger by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(currentBudgetMonthEvents) {
+
+    LaunchedEffect(currentBudgetMonthEvents, Unit, retrigger, currentBudget) {
         spentMoney = currentBudgetMonthEvents.value
             .filter { it.amount < 0 }
             .sumOf { -it.amount.toDouble() }
@@ -1259,16 +1322,15 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
         } else {
             1f
         }
+
     }
-
-
 
     Scaffold(containerColor = colorScheme.primaryContainer,
         topBar = {
             Box(modifier = Modifier
                 .fillMaxWidth(1f)
                 .background(
-                    brush = Brush.horizontalGradient(
+                    brush = horizontalGradient(
                         colors = listOf(
                             Color(0xFF9F2BB1),
                             Color(0xFFEBA4FF)
@@ -1312,16 +1374,19 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
                 }
                 Log.d("BudgetScreen", "${currentDate.value.dayOfMonth.toFloat()}\n" +
                         "${currentDate.value.plusMonths(1).minusDays(1).dayOfMonth}")
+                fun getTimeLeft(): Int {
+                    return ((LocalDate.of(currentDate.value.year, currentDate.value.monthValue, 1)).plusMonths(1).minusDays(1).dayOfMonth) - currentDate.value.dayOfMonth
+                }
                 BudgetCard(
                     budgetAmount = "${currentBudget - spentMoney} UAH",
                     totalBudget = "$currentBudget",
-                    statusText = "",
-                    timeProgress = (currentDate.value.dayOfMonth.toFloat() / LocalDate.of(currentDate.value.year, currentDate.value.monthValue, 1).plusMonths(1).minusDays(1).dayOfMonth),
+                    statusText = "Which means, you have ${(1f - progress) * 100}% of money left, and you can expect to be able to spend around" +
+                            " ${((currentBudget - spentMoney)/
+                                    getTimeLeft().toFloat()).roundToInt()} UAH every day till the end of the month.",
+                    timeProgress = (1f - ((getTimeLeft().toFloat()) / (currentDate.value.lengthOfMonth()))),
                     progress = progress.coerceAtMost(1f),
                     viewModel = viewModel
                 )
-
-
 
                 val numberOfDays = currentDate.value.lengthOfMonth()
 
@@ -1341,41 +1406,59 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
                     cumulative += dailyExpense
                 }
 
-                val labelDays = listOf(1, 8, 15, 22, numberOfDays).distinct()
+                val labelDays = listOf(1, 7, 14, 21, numberOfDays).distinct()
 
-
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color.White,
+                ) {
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFF6200EE)) // Purple background
-                            .border(2.dp, Color.Blue, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .background(
+                                brush =
+                                horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFFBA57D5),
+                                        Color(0xFFEBA4FF)
+                                    )
+                                )
+                            )
                             .padding(16.dp)
                     ) {
+
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             // Title
                             Text(
                                 text = "Budget Expenses by Day",
                                 color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
+                                style = customTitle,
+                                fontSize = 20.sp
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-
+                            Spacer(modifier = Modifier.height(12.dp))
                             // Y-axis labels and graph
                             Row {
                                 // Y-axis labels (percentages)
+                                val yAxisHeight = 200.dp
                                 Column(
                                     modifier = Modifier
                                         .width(40.dp)
-                                        .height(200.dp),
+                                        .height(yAxisHeight + 5.dp),
                                     verticalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    listOf("100%", "75%", "50%", "25%", "0%").forEach { label ->
-                                        Text(label, color = Color.White, fontSize = 12.sp)
+                                    listOf("100%", "75%", "50%", "25%", "0%").forEachIndexed{ index, label ->
+                                        Text(label, color = Color.White, fontSize = 12.sp, lineHeight = 10.sp)
+                                        if(index != 4){
+                                            Spacer(modifier = Modifier.weight( (yAxisHeight.value / 5) / 200))
+                                        }
                                     }
                                 }
-
+                                var widthForBottomRow = 1f
                                 // Graph area
                                 Column {
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Canvas(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1383,19 +1466,7 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
                                     ) {
                                         val width = size.width
                                         val height = size.height
-
-                                        // Draw horizontal grid lines (0% to 100%)
-                                        for (i in 0..4) {
-                                            val y = i * (height / 4)
-                                            drawLine(
-                                                color = Color.White,
-                                                start = Offset(0f, y),
-                                                end = Offset(width, y),
-                                                strokeWidth = 1.dp.toPx(),
-                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                                            )
-                                        }
-
+                                        widthForBottomRow = width
                                         // Draw vertical grid lines
                                         for (day in labelDays) {
                                             val x = (day / numberOfDays.toFloat()) * width
@@ -1404,73 +1475,105 @@ fun BudgetScreen(navController: NavHostController, viewModel: ViewModel) {
                                                 start = Offset(x, 0f),
                                                 end = Offset(x, height),
                                                 strokeWidth = 1.dp.toPx(),
-                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                                pathEffect = PathEffect.dashPathEffect(
+                                                    floatArrayOf(
+                                                        10f,
+                                                        10f
+                                                    ), 0f
+                                                )
+                                            )
+                                        }
+                                        // Draw horizontal grid lines (0% to 100%)
+                                        for (i in 0..4) {
+                                            val y = i * (height / 4)
+                                            drawLine(
+                                                color = Color.White,
+                                                start = Offset((1 / numberOfDays.toFloat()) * width, y),
+                                                end = Offset(width, y),
+                                                strokeWidth = 1.dp.toPx(),
+                                                pathEffect = PathEffect.dashPathEffect(
+                                                    floatArrayOf(
+                                                        10f,
+                                                        10f
+                                                    ), 0f
+                                                )
                                             )
                                         }
                                         if (cumulative > 0) {
 
                                             val points = dailyExpensePairs.map { (day, total) ->
-                                                    val percentage = (total / cumulative) * 100f
-                                                    val x = (day / numberOfDays.toFloat()) * width
-                                                    val y = height * (1 - percentage / 100f)
-                                                    if (total > 1f){
-                                                        Offset(x, y.toFloat())
-                                                    }
-                                                  else {
-                                                      Offset(x, 0f)
-                                                    }
+                                                val percentage = (total / cumulative) * 100f
+                                                val x = (day / numberOfDays.toFloat()) * width
+                                                val y = height * (1 - percentage / 100f)
+                                                if (total > 1f) {
+                                                    Offset(x, y.toFloat())
+                                                } else {
+                                                    Offset(x, 0f)
+                                                }
                                             }
 
                                             // Draw dashed line connecting points
                                             drawPath(
                                                 path = Path().apply {
                                                     if (points.isNotEmpty()) {
-                                                        if (points[0].y != 0f){
+                                                        if (points[0].y != 0f) {
                                                             moveTo(points[0].x, points[0].y)
-                                                        }
-                                                        else {
-                                                            val percentage = (0f / cumulative) * 100f
-                                                            val x = (1 / numberOfDays.toFloat()) * width
+                                                        } else {
+                                                            val percentage =
+                                                                (0f / cumulative) * 100f
+                                                            val x =
+                                                                (1 / numberOfDays.toFloat()) * width
                                                             val y = height * (1 - percentage / 100f)
                                                             moveTo(x, y.toFloat())
                                                         }
                                                         points.drop(1).forEach { point ->
-                                                            lineTo(point.x, point.y)
+                                                            if (point.y >= 1f) {
+                                                                lineTo(point.x, point.y)
+                                                            }
                                                         }
                                                     }
                                                 },
                                                 color = Color.White,
                                                 style = Stroke(
                                                     width = 2.dp.toPx(),
-                                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
                                                 )
                                             )
 
                                             // Draw dots at data points
                                             points.forEach { point ->
                                                 drawCircle(
-                                                    color = if (point.y > 100f){Color.Black} else {Color.Transparent},
+                                                    color = if (point.y > 1f) {
+                                                        Color.White
+                                                    } else {
+                                                        Color.Transparent
+                                                    },
                                                     radius = 4.dp.toPx(),
                                                     center = point
                                                 )
                                             }
                                         }
                                     }
-
-                                    // X-axis labels
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        labelDays.forEach { day ->
-                                            Text(day.toString(), color = Color.White, fontSize = 12.sp)
+                                        labelDays.forEachIndexed { index, day  ->
+                                            Text(
+                                                day.toString(),
+                                                color = Color.White,
+                                                fontSize = 12.sp
+                                            )
+                                            if(index != labelDays.size - 1){
+                                                Spacer(modifier = Modifier.weight(widthForBottomRow / labelDays.size))
+                                            }
+
                                         }
                                     }
                                 }
                             }
                         }
                     }
-
+                }
             }
         }
     }

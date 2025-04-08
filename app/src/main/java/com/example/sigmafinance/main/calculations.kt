@@ -121,7 +121,11 @@ fun getOccurrencesForYearRecurring(
         }
     }
     fun generateDesiredSequence(event: DBType.FundsEventRecurring, unit: ChronoUnit): List<TemporaryLists.DemonstrationEvent>{
-        val firstOccurrence = alignToStart(event.startDate, event.repeatInterval.toLong(), unit, startOfYear)
+        val firstOccurrence =
+            if (event.startDate.year != year){
+                alignToStart(event.startDate, event.repeatInterval.toLong(), unit, startOfYear)
+            }
+        else { event.startDate }
         return generateSequence(firstOccurrence) { current ->
             current.plus(event.repeatInterval.toLong(), unit)
         }.takeWhile { current ->
@@ -160,9 +164,7 @@ fun getOccurrencesForYearRecurring(
                             type = "Recurring"
                         )
                     )
-                } else {
-                    emptyList()
-                }
+                } else { emptyList() }
             }
             else -> emptyList()
         }

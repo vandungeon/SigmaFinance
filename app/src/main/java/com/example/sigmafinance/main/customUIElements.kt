@@ -15,17 +15,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -34,13 +29,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -52,30 +45,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Brush.Companion.horizontalGradient
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection.Companion.Content
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -86,14 +68,11 @@ import com.example.sigmafinance.ui.theme.balanceGreen
 import com.example.sigmafinance.ui.theme.balanceRed
 import com.example.sigmafinance.ui.theme.customText
 import com.example.sigmafinance.ui.theme.customTitle
-import com.example.sigmafinance.ui.theme.dialogHeader
-import com.example.sigmafinance.ui.theme.jordyBlue
 import com.example.sigmafinance.ui.theme.montserratFontFamily
 import com.example.sigmafinance.ui.theme.periwinkle
 import com.example.sigmafinance.ui.theme.richBlack
 import com.example.sigmafinance.ui.theme.standardText
 import com.example.sigmafinance.viewmodel.ViewModel
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 enum class MonthName {
@@ -105,11 +84,12 @@ enum class MonthName {
 @Composable
 fun customTextFieldColors(): TextFieldColors {
     return TextFieldDefaults.colors(
-            focusedTextColor = jordyBlue,
-            focusedIndicatorColor = jordyBlue,
-            unfocusedIndicatorColor = Color.Transparent,
-            focusedContainerColor = jordyBlue.copy(alpha = 0.1f),
-            unfocusedContainerColor = Color.Transparent
+            focusedTextColor = periwinkle,
+            focusedIndicatorColor = periwinkle,
+            unfocusedIndicatorColor = periwinkle,
+            unfocusedTextColor = Color.White,
+            focusedContainerColor = Color.White.copy(alpha = 1f),
+            unfocusedContainerColor = Color(0xFF2A2A2A)
 
     )
 }
@@ -206,7 +186,7 @@ fun GreyScaleCard(modifier: Modifier = Modifier,
     Card (modifier = Modifier
         .fillMaxWidth(1f)
         .padding(horizontal = 11.dp),
-        shape = RoundedCornerShape(30.dp)
+        shape = RoundedCornerShape(24.dp)
     ) {
         Box(modifier = modifier
             .padding(horizontal = 23.dp)
@@ -214,6 +194,24 @@ fun GreyScaleCard(modifier: Modifier = Modifier,
             content()
         }
     }
+}
+@Composable
+fun CustomButton(modifier: Modifier = Modifier, text: String, onClick: () -> Unit, enabled: Boolean){
+    Button(
+        enabled = enabled,
+        modifier = modifier
+            .height(30.dp)
+        ,
+        onClick =  { onClick() },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFBA57D5),
+            disabledContainerColor = richBlack.copy(alpha = 0.4f)
+        ),
+        contentPadding = PaddingValues(vertical = 2.dp, horizontal = 15.dp)
+    ){
+        Text(text, style = customText)
+    }
+
 }
 
 
@@ -424,16 +422,14 @@ fun AddFundsEvent(
     }
 
     Dialog(onDismissRequest = { onDismiss() }) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = richBlack
-        ) {
+        GreyScaleCard {
             Column(
-                modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("New Event", color = Purple40, style = dialogHeader)
-                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()){
+                    Text("New Event", style = customTitle)
+                }
+
                 CustomTextField(
                     value = eventName,
                     onValueChange = { eventName = it },
@@ -458,21 +454,26 @@ fun AddFundsEvent(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnit)
                         },
                         label = "Repeat",
+                        colors = customTextFieldColors(),  // Using your custom colors function
                         modifier = Modifier
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth(1f)
                     )
                     ExposedDropdownMenu(
                         expanded = expandedUnit,
-                        onDismissRequest = { expandedUnit = false }
+                        onDismissRequest = { expandedUnit = false },
+                        modifier = Modifier.background(color = Color.White)
                     ) {
                         repeatUnits.forEach { unit ->
                             DropdownMenuItem(
+                                text = { Text(unit, color = periwinkle) },
                                 onClick = {
                                     repeatUnit = unit
                                     expandedUnit = false
                                 },
-                                text = { Text(unit) }
+                                modifier = Modifier
+                                    .background(Color(0xFFFFFFFF))
+                                    .border(color = Color.Gray.copy(alpha = 0.2f), width = 2.dp)
                             )
                         }
                     }
@@ -553,12 +554,11 @@ fun AddFundsEvent(
                     }
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    Button(onClick = { onDismiss() }, colors = customButtonColors()) {
-                        Text("Cancel")
-                    }
-                    Button(onClick = {
+                    CustomButton(onClick = { onDismiss() }, text = "cancel", enabled = true, modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(0.1f))
+                    CustomButton(onClick = {
                         val endDate = if (endCondition == "Until date" && isDateValid) {
                             LocalDate.parse(endDateInput, dateFormatter)
                         } else {
@@ -566,10 +566,9 @@ fun AddFundsEvent(
                         }
                         onConfirm(eventName, eventAmount, repeatInterval.toInt(), repeatUnit, endCondition, endAfterOccurrences.toInt(), endDate)
                         onDismiss()
-                    }, colors = customButtonColors(), enabled = validateInput(eventName, eventAmount)) {
-                        Text("Confirm")
-                    }
+                    }, text = "confirm", enabled = validateInput(eventName, eventAmount), modifier = Modifier.weight(1f))
                 }
+
             }
         }
     }
@@ -583,7 +582,6 @@ fun EditEvent(
     currentDate: LocalDate,
     selectedDate: Int
 ) {
-    val coroutineScope = rememberCoroutineScope()
     var eventName by remember { mutableStateOf(event.name) }
     var eventAmount by remember { mutableStateOf(event.amount.toString()) }
     var repeatInterval by remember { mutableIntStateOf(1) }
@@ -597,7 +595,8 @@ fun EditEvent(
     val endConditions = listOf("Never", "After N times", "Until date")
     var expandedUnit by remember { mutableStateOf(false) }
     var expandedEndCondition by remember { mutableStateOf(false) }
-
+    val selectedEvent = viewModel.getEventById(event.referenceId)
+    val selectedEventRecurring = viewModel.getRecurringEventById(event.referenceId)
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     fun validateInput(name: String, amount: String): Boolean {
@@ -612,18 +611,89 @@ fun EditEvent(
             false
         }
     }
-    if (event.type == "Static"){
-        val selectedEvent = viewModel.getEventById(event.referenceId)
-        Dialog(onDismissRequest = { onDismiss() }) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = richBlack
+    Dialog(onDismissRequest = { onDismiss() }) {
+        LaunchedEffect (Unit){
+            if (event.type == "Static") {
+
+            }
+            else {
+
+            }
+        }
+        @Composable
+        fun ThreeButtonStructure(onclick1: () -> Unit, onclick2: () -> Unit, onclick3: () -> Unit): Unit {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Row() {
+                    CustomButton(
+                        onClick = { onclick1() },
+                        text = "cancel",
+                        enabled = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.weight(0.1f))
+                    CustomButton(onClick = {
+                        onclick2()
+                    }, text = "delete", enabled = true, modifier = Modifier.weight(1f))
+                }
+                CustomButton(
+                    onClick = {
+                        onclick3()
+                    },
+                    text = "confirm",
+                    enabled = validateInput(eventName, eventAmount),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+        GreyScaleCard {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Update event details", color = Purple40, style = dialogHeader)
+                    Text("Update event details", style = customTitle, fontSize = 20.sp)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                if (event.type == "Static") {
+
+                    CustomTextField(
+                        value = eventName,
+                        onValueChange = { eventName = it },
+                        label = "Title",
+                        modifier = Modifier.fillMaxWidth(1f)
+                    )
+                    CustomTextField(
+                        value = eventAmount,
+                        onValueChange = {
+                            eventAmount = if (it.toIntOrNull() != null) {
+                                it
+                            } else {
+                                ""
+                            }
+                        },
+                        label = "Amount",
+                        modifier = Modifier.fillMaxWidth(1f)
+                    )
+                    ThreeButtonStructure(
+                        onclick1 = { onDismiss() },
+                        onclick2 = { if (selectedEvent != null) { viewModel.deleteEvent(selectedEvent) }
+                        onDismiss()},
+                        onclick3 = { val newEvent = selectedEvent?.copy(
+                        name = eventName,
+                        amount = eventAmount.toFloat()
+                    )
+                        if (newEvent != null) {
+                            viewModel.updateEvent(newEvent)
+                        }
+                        onDismiss()}
+                    )
+                } else {
                     Spacer(modifier = Modifier.height(8.dp))
                     CustomTextField(
                         value = eventName,
@@ -633,236 +703,153 @@ fun EditEvent(
                     )
                     CustomTextField(
                         value = eventAmount,
-                        onValueChange = { eventAmount = if (it.toIntOrNull() != null){ it } else {""}},
+                        onValueChange = {
+                            eventAmount = if (it.toIntOrNull() != null) {
+                                it
+                            } else {
+                                ""
+                            }
+                        },
                         label = "Amount",
                         modifier = Modifier.fillMaxWidth(1f)
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ExposedDropdownMenuBox(
+                        expanded = expandedUnit,
+                        onExpandedChange = { expandedUnit = it }
                     ) {
-                        Button(onClick = { onDismiss() }, colors = customButtonColors(), contentPadding = PaddingValues(vertical = 2.dp, horizontal = 15.dp)) {
-                            Text("Cancel")
-                        }
-                        Button(onClick = {
-                            coroutineScope.launch {
-                                if (selectedEvent != null) {
-                                    viewModel.deleteEvent(selectedEvent)
-                                }
-                            }
-                            onDismiss()
-                        }, colors = customButtonColors(),
-                            contentPadding = PaddingValues(vertical = 2.dp, horizontal = 15.dp)) {
-                            Text("Delete")
-                        }
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    val newEvent = selectedEvent?.copy(
-                                        name = eventName,
-                                        amount = eventAmount.toFloat()
-                                    )
-                                    if (newEvent != null) {
-                                        viewModel.updateEvent(newEvent)
-                                    }
-
-                                }
-                                onDismiss()
+                        CustomTextField(
+                            value = repeatUnit,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnit)
                             },
-                            colors = customButtonColors(),
-                            contentPadding = PaddingValues(vertical = 2.dp, horizontal = 30.dp),
-                        enabled = validateInput(eventName, eventAmount)
-                        ) {
-                            Text("Confirm")
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else {
-        val selectedEvent =  viewModel.getRecurringEventById(event.referenceId)
-        expandedUnit = true
-        Dialog(onDismissRequest = { onDismiss() }) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = richBlack
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column {
-
-
-                        Text("Update event details", color = Purple40, style = dialogHeader)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CustomTextField(
-                            value = eventName,
-                            onValueChange = { eventName = it },
-                            label = "Title",
-                            modifier = Modifier.fillMaxWidth(1f)
+                            label = "Repeat",
+                            modifier = Modifier
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .fillMaxWidth(1f)
                         )
-                        CustomTextField(
-                            value = eventAmount,
-                            onValueChange = { eventAmount = if (it.toIntOrNull() != null){ it } else {""}},
-                            label = "Amount",
-                            modifier = Modifier.fillMaxWidth(1f)
-                        )
-                        ExposedDropdownMenuBox(
+                        ExposedDropdownMenu(
                             expanded = expandedUnit,
-                            onExpandedChange = { expandedUnit = it }
+                            onDismissRequest = { expandedUnit = false }
                         ) {
-                            CustomTextField(
-                                value = repeatUnit,
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnit)
-                                },
-                                label = "Repeat",
-                                modifier = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                    .fillMaxWidth(1f)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = expandedUnit,
-                                onDismissRequest = { expandedUnit = false }
-                            ) {
-                                repeatUnits.forEach { unit ->
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            repeatUnit = unit
-                                            expandedUnit = false
-                                        },
-                                        text = { Text(unit) }
-                                    )
-                                }
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Every", color = Color.White)
-                            CustomTextField(
-                                value = repeatInterval.toString(),
-                                onValueChange = {
-                                    if (it.toIntOrNull() != null) {
-                                        repeatInterval = it.toInt()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .width(110.dp)
-                                    .padding(horizontal = 16.dp)
-                            )
-                            Text(repeatUnit, color = Color.White)
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-                        ExposedDropdownMenuBox(
-                            expanded = expandedEndCondition,
-                            onExpandedChange = { expandedEndCondition = it }
-                        ) {
-                            CustomTextField(
-                                value = endCondition,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = "End condition",
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedEndCondition)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = expandedEndCondition,
-                                onDismissRequest = { expandedEndCondition = false }
-                            ) {
-                                endConditions.forEach { condition ->
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            endCondition = condition
-                                            expandedEndCondition = false
-                                        },
-                                        text = { Text(condition) }
-                                    )
-                                }
-                            }
-                        }
-                        when (endCondition) {
-                            "After N times" -> {
-                                CustomTextField(
-                                    value = endAfterOccurrences,
-                                    onValueChange = { endAfterOccurrences = if (it.toIntOrNull() != null && it.toInt() > 0){ it } else {""}},
-                                    label = "Occurrences",
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            "Until date" -> {
-                                CustomTextField(
-                                    value = endDateInput,
-                                    onValueChange = {
-                                        endDateInput = it
-                                        isDateValid = validateDate(it)
+                            repeatUnits.forEach { unit ->
+                                DropdownMenuItem(
+                                    onClick = {
+                                        repeatUnit = unit
+                                        expandedUnit = false
                                     },
-                                    label = "End Date (yyyy-MM-dd)",
-                                    labelColor = if (isDateValid) Purple40 else Color.Red,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    isError = !isDateValid
+                                    text = { Text(unit) }
                                 )
-                                if (!isDateValid) {
-                                    Text("Invalid date format", color = Color.Red)
-                                }
                             }
                         }
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth(1f),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Button(onClick = { onDismiss() }, colors = customButtonColors(), contentPadding = PaddingValues(vertical = 2.dp, horizontal = 15.dp)) {
-                            Text("Cancel")
-                        }
-                        Button(onClick = {
-                            onDismiss()
-                                if (selectedEvent != null) {
-                                    viewModel.deleteEventRecurring(selectedEvent)
-                                }  }, contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
-                            colors = customButtonColors()) {
-                            Text("Delete")
-                        }
-                        Button(onClick = {
-                            val endDate = if (endCondition == "Until date" && isDateValid) {
-                                LocalDate.parse(endDateInput, dateFormatter)
-                            } else {
-                                null
-                            }
-                                val newEvent = selectedEvent?.copy(name = eventName,
-                                    amount = eventAmount.toFloat(),
-                                    repeatInterval = repeatInterval,
-                                    repeatUnit = repeatUnit,
-                                    endCondition = endCondition,
-                                    endAfterOccurrences = endAfterOccurrences.toInt(),
-                                    endDate = if(endCondition != "Never") {calculateEndDate(startDate = LocalDate.of(
-                                        currentDate.year,
-                                        currentDate.month,
-                                        selectedDate
-                                    ),
-                                        repeatInterval,
-                                        repeatUnit,
-                                        endCondition,
-                                        endAfterOccurrences.toInt(),
-                                        endDate)} else {null})
-                                if (newEvent != null) {
-                                    viewModel.updateEventRecurring(newEvent)
+                        Text("Every", color = Color.White)
+                        CustomTextField(
+                            value = repeatInterval.toString(),
+                            onValueChange = {
+                                if (it.toIntOrNull() != null) {
+                                    repeatInterval = it.toInt()
                                 }
-                            onDismiss()
-                        }
-                            ,contentPadding = PaddingValues(vertical = 2.dp, horizontal = 25.dp),
-                            colors = customButtonColors(), enabled = validateInput(eventName, eventAmount)) {
-                            Text("Confirm")
+                            },
+                            modifier = Modifier
+                                .width(110.dp)
+                                .padding(horizontal = 16.dp)
+                        )
+                        Text(repeatUnit, color = Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                    ExposedDropdownMenuBox(
+                        expanded = expandedEndCondition,
+                        onExpandedChange = { expandedEndCondition = it }
+                    ) {
+                        CustomTextField(
+                            value = endCondition,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = "End condition",
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedEndCondition)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedEndCondition,
+                            onDismissRequest = { expandedEndCondition = false }
+                        ) {
+                            endConditions.forEach { condition ->
+                                DropdownMenuItem(
+                                    onClick = {
+                                        endCondition = condition
+                                        expandedEndCondition = false
+                                    },
+                                    text = { Text(condition) }
+                                )
+                            }
                         }
                     }
+                    when (endCondition) {
+                        "After N times" -> {
+                            CustomTextField(
+                                value = endAfterOccurrences,
+                                onValueChange = {
+                                    endAfterOccurrences =
+                                        if (it.toIntOrNull() != null && it.toInt() > 0) {
+                                            it
+                                        } else {
+                                            ""
+                                        }
+                                },
+                                label = "Occurrences",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "Until date" -> {
+                            CustomTextField(
+                                value = endDateInput,
+                                onValueChange = {
+                                    endDateInput = it
+                                    isDateValid = validateDate(it)
+                                },
+                                label = "End Date (yyyy-MM-dd)",
+                                labelColor = if (isDateValid) Purple40 else Color.Red,
+                                modifier = Modifier.fillMaxWidth(),
+                                isError = !isDateValid
+                            )
+                            if (!isDateValid) {
+                                Text("Invalid date format", color = Color.Red)
+                            }
+                        }
+                    }
+                    ThreeButtonStructure(
+                        onclick1 = { onDismiss()  },
+                        onclick2 = {if (selectedEventRecurring != null) { viewModel.deleteEventRecurring(selectedEventRecurring) }
+                            onDismiss()}
+                        , onclick3 = { val endDate = if (endCondition == "Until date" && isDateValid) {
+                        LocalDate.parse(endDateInput, dateFormatter)
+                    } else {
+                        null
+                    }
+                        val newEvent = selectedEventRecurring?.copy(
+                            name = eventName, amount = eventAmount.toFloat(),
+                            repeatInterval = repeatInterval, repeatUnit = repeatUnit,
+                            endCondition = endCondition, endAfterOccurrences = endAfterOccurrences.toInt(),
+                            endDate = if (endCondition != "Never") {
+                                calculateEndDate(
+                                    startDate = LocalDate.of(currentDate.year, currentDate.month, selectedDate
+                                    ), repeatInterval, repeatUnit, endCondition, endAfterOccurrences.toInt(), endDate
+                                )
+                            } else { null }
+                        )
+                        if (newEvent != null) { viewModel.updateEventRecurring(newEvent) }
+                        onDismiss()})
                 }
             }
         }
@@ -879,16 +866,11 @@ fun EnterNewMoneyValueDialog(
     var temporaryValue by remember { mutableStateOf(previousValue.toString()) }
     fun validateInput(amount: String): Boolean { return amount.toFloatOrNull() != null }
     Dialog(onDismissRequest = { onDismiss() }) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = richBlack
-        ) {
+        GreyScaleCard {
             Column(
-                modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Enter new amount of money", color = Purple40, style = dialogHeader)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Enter new amount of money", style = customTitle)
                 CustomTextField(
                     value = temporaryValue,
                     onValueChange = { temporaryValue = it },
@@ -898,15 +880,12 @@ fun EnterNewMoneyValueDialog(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(onClick = { onDismiss() }, colors = customButtonColors()) {
-                        Text("Cancel")
-                    }
-                    Button(onClick = {
+                    CustomButton(onClick = { onDismiss() }, text = "cancel", enabled = true, modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(0.1f))
+                    CustomButton(onClick = {
                         onConfirm(temporaryValue.toFloat())
                         onDismiss()
-                    }, colors = customButtonColors(), enabled = validateInput(temporaryValue)) {
-                        Text("Confirm")
-                    }
+                    }, text = "confirm", enabled = true, modifier = Modifier.weight(1f))
                 }
             }
 
@@ -928,9 +907,6 @@ fun BudgetCard(
     LaunchedEffect(key1 = newBudget) {
         if (newBudget.toFloatOrNull() != null){
         viewModel.saveBudgetValue(newBudget.toFloat()) }
-    }
-    val currentDate by remember {
-        mutableStateOf(viewModel.currentDate)
     }
     Surface(
         modifier = modifier
@@ -1018,7 +994,7 @@ fun ProgressSection(progress: Float, statusText: String, timeProgress: Float) {
         ) {
             // Progress bar for money spent
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { 1 - progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(16.dp),
@@ -1032,12 +1008,12 @@ fun ProgressSection(progress: Float, statusText: String, timeProgress: Float) {
                     .fillMaxWidth()
                     .fillMaxHeight()
             ) {
-                val lineWidth = 2.dp.toPx()
+                val lineWidth = 6.dp.toPx()
                 val lineHeight = size.height
                 val xPosition = size.width * timeProgress.coerceIn(0f, 1f)
 
                 drawLine(
-                    color = Color.White,
+                    color = Color.Black,
                     start = Offset(x = xPosition - lineWidth / 2, y = 0f),
                     end = Offset(x = xPosition - lineWidth / 2, y = lineHeight),
                     strokeWidth = lineWidth
@@ -1051,6 +1027,7 @@ fun ProgressSection(progress: Float, statusText: String, timeProgress: Float) {
             fontSize = 14.sp,
             color = Color.Black
         )
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 @Composable
